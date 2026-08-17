@@ -231,6 +231,8 @@ function bonusOf(av,bv){ // best bonus of variant av vs variant bv
   return best;
 }
 function clsZh(g){ return g.map(c=>CLS_ZH[c]||c).join(""); }
+function costTotal(v){ return v.cost.f+v.cost.w+v.cost.g+v.cost.s+(v.cost.o||0)+(v.cost.sv||0); }
+function costText(v){ return [v.cost.f?"食"+v.cost.f:"",v.cost.w?"木"+v.cost.w:"",v.cost.g?"金"+v.cost.g:"",v.cost.s?"石"+v.cost.s:"",v.cost.o?"橄欖油"+v.cost.o:"",v.cost.sv?"白銀"+v.cost.sv:""].filter(Boolean).join(" ")||"免費"; }
 // returns {v:1 left wins,-1 right wins,0 tie, r:reason} or null
 function verdict(L,R){
   const ex=exception(L,R); if(ex) return ex;
@@ -252,14 +254,12 @@ function verdict(L,R){
     const RAW=v=>v.hp*(v.w.d/v.w.s)*(1+(v.ma+v.ra)/20);
     const useCost = cost(L.v)>0 && cost(R.v)>0; // 免費單位只比數值
     const P=v=>RAW(v)/(useCost?Math.pow(cost(v),1.5):1);
-    const rawRatio=Math.max(RAW(L.v),RAW(R.v))/Math.min(RAW(L.v),RAW(R.v));
     const pL=P(L.v), pR=P(R.v), ratio=Math.max(pL,pR)/Math.min(pL,pR);
     const stat=S=>`血量 ${S.v.hp}／攻擊 ${S.v.w.d}／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
-    if(rawRatio<1.1) // 數值幾乎相同：便宜只是文明的經濟優勢，不算相剋
-      return {v:0, r:`同類型單位，戰鬥數值幾乎相同（${L.u.zh} ${stat(L)}；${R.u.zh} ${stat(R)}），成本差異屬於文明經濟優勢，不算相剋。`};
     if(ratio>=1.25){
       const [hi,lo]=pL>pR?[L,R]:[R,L];
-      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高：${hi.u.zh} ${stat(hi)}；${lo.u.zh} ${stat(lo)}。`};
+      const cheaper = cost(hi.v)<cost(lo.v) ? `（同成本下${hi.u.zh}可以多出幾隻）` : "";
+      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高${cheaper}：${hi.u.zh} ${stat(hi)}；${lo.u.zh} ${stat(lo)}。`};
     }
     return {v:0, r:`同類型單位，同成本下戰力相近：${L.u.zh} ${stat(L)}；${R.u.zh} ${stat(R)}。沒有明顯相剋，勝負看操作與升級。`};
   }
@@ -377,11 +377,11 @@ function endGame(){
   } else title=(mode==="timed"?"提前結束":"練習結束")+`　答對 ${score} / ${count}`;
   $("resTitle").innerHTML=title;
   const side=(S,win)=>`<div class="wside ${win?"wwin":""}"><img src="${DATA.icons[S.v.i]||""}" alt=""><div class="wciv">${DATA.civs[S.v.c][1]}</div><div class="wname">${S.u.zh}</div><div class="wmeta">${AGE[S.v.a]}時代・${ARCH[S.u.arch]}</div>
-    <div class="wstats"><span>血量</span><span>${S.v.hp}</span><span>護甲</span><span>近 ${S.v.ma} / 遠 ${S.v.ra}</span><span>攻擊</span><span>${S.v.w.d}（${S.v.w.t==="melee"?"近戰":"遠程"}，每 ${S.v.w.s}s）</span><span>射程</span><span>${S.v.w.r>1?S.v.w.r:"近戰"}</span><span>移速</span><span>${S.v.sp}</span><span>加成</span><span>${S.v.mods.length?S.v.mods.map(m=>m.c.map(g=>clsZh(g)+" +"+m.v).join("／")).join("、"):"無"}</span></div></div>`;
+    <div class="wstats"><span>血量</span><span>${S.v.hp}</span><span>護甲</span><span>近 ${S.v.ma} / 遠 ${S.v.ra}</span><span>攻擊</span><span>${S.v.w.d}（${S.v.w.t==="melee"?"近戰":"遠程"}，每 ${S.v.w.s}s）</span><span>射程</span><span>${S.v.w.r>1?S.v.w.r:"近戰"}</span><span>移速</span><span>${S.v.sp}</span><span>成本</span><span>${costText(S.v)}${costTotal(S.v)?"（共 "+costTotal(S.v)+"）":""}</span><span>加成</span><span>${S.v.mods.length?S.v.mods.map(m=>m.c.map(g=>clsZh(g)+" +"+m.v).join("／")).join("、"):"無"}</span></div></div>`;
   $("wrongList").innerHTML=wrongs.length?wrongs.map(({q},i)=>{
     const w=q.vd.v===0?"無明顯相剋":(q.vd.v===1?"左邊 "+q.L.u.zh:"右邊 "+q.R.u.zh);
     return `<div class="wrong" data-i="${i}"><div class="wrow">${side(q.L,q.vd.v===1)}<div class="wvs ${q.vd.v===0?"wwin":""}">${q.vd.v===0?"無明顯相剋":"vs"}</div>${side(q.R,q.vd.v===-1)}</div><div class="wans">正解：${w}</div><div class="wreason">${q.vd.r}</div>
-    <div class="dispute"><span class="dq">覺得判定有誤？記下你認為的正解：</span><button data-v="1">左邊 ${q.L.u.zh}</button><button data-v="0">平手</button><button data-v="-1">右邊 ${q.R.u.zh}</button><span class="dok"></span></div></div>`;
+    <div class="dispute"><span class="dq">覺得判定有誤？記下你認為的正解：</span><button data-v="1">左邊 ${q.L.u.zh}</button><button data-v="0">無明顯相剋</button><button data-v="-1">右邊 ${q.R.u.zh}</button><span class="dok"></span></div></div>`;
   }).join(""):"<p class='hint'>全對，沒有錯題 👍</p>";
   document.querySelectorAll(".dispute button").forEach(b=>b.onclick=()=>{
     const box=b.closest(".wrong"); const q=wrongs[+box.dataset.i].q; const v=+b.dataset.v;
