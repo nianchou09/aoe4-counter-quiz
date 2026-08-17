@@ -88,13 +88,14 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
     <button class="tg" id="tgAdv" title="加入各文明獨特單位">進階：獨特單位</button>
     <button class="tg on" id="tgStats" title="顯示/隱藏數值">顯示數值</button>
     <button class="lnk" id="btnStatsPage">📊 統計 ›</button>
+    <button class="lnk" id="btnHomeTop" style="display:none">‹ 回首頁</button>
   </div>
 </header>
 <main>
   <!-- START -->
   <section class="screen active center" id="scrStart">
     <p class="hint"><b>點會贏的那一邊</b>，沒有明顯相剋就按「無明顯相剋」。</p>
-    <button class="big" id="btnTimed">⏱ 30 秒挑戰</button>
+    <button class="big" id="btnTimed">⏱ 20 題計時</button>
     <button class="sec" id="btnPractice">練習模式（不計時）</button>
     <div id="best" class="hint"></div>
   </section>
@@ -139,7 +140,7 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
     <div class="center"><button class="sec" id="btnHome2">回首頁</button><button class="sec" id="btnReset" style="color:var(--red)">清除紀錄</button></div>
   </section>
 </main>
-<footer>數值與圖示來源：AoE4 World（data.aoe4world.com）。判定情境：同成本的兩群互打。判定＝特殊機制例外 ＞ 加成傷害 ＞ 兵種類型規則，僅供學習參考。</footer>
+<footer>判定情境：同成本的兩群互打。判定＝特殊機制例外 ＞ 加成傷害 ＞ 兵種類型規則，僅供學習參考。<br>數值與圖示來源：AoE4 World（data.aoe4world.com）。</footer>
 </div>
 
 <script>
@@ -264,12 +265,12 @@ const LS="aoe4cq";
 let store=load();
 function load(){ try{return JSON.parse(localStorage.getItem(LS))||{}}catch(e){return {}} }
 function save(){ try{localStorage.setItem(LS,JSON.stringify(store));}catch(e){} }
-store.log=store.log||[]; store.best=store.best||{basic:0,adv:0};
+store.log=store.log||[]; store.bestT=store.bestT||{basic:null,adv:null}; // 最佳成績（秒，越低越好）
 let adv=!!store.adv, showStats=store.showStats!==false, crossAge=false; // 一律同時代對比
 store.overrides=store.overrides||{}; store.disputes=store.disputes||[];
 
 const $=id=>document.getElementById(id);
-function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); document.querySelector(".app").classList.toggle("in-quiz", id==="scrQuiz"); window.scrollTo(0,0); }
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); document.querySelector(".app").classList.toggle("in-quiz", id==="scrQuiz"); $("btnStatsPage").style.display=id==="scrStats"?"none":""; $("btnHomeTop").style.display=id==="scrStats"?"":"none"; window.scrollTo(0,0); }
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
 
 function pool(){ return DATA.units.filter(u=>adv?true:u.basic); }
@@ -298,8 +299,8 @@ function makeQ(){
   return null;
 }
 
-let mode="timed", q=null, answered=false, score=0, count=0, wrongs=[], timeLeft=30, timerId=null, lastTick=0;
-const TOTAL=30;
+let mode="timed", q=null, answered=false, score=0, count=0, wrongs=[], elapsed=0, timerId=null, lastTick=0;
+const NQ=20, PENALTY=3; // 固定 20 題；每錯一題加 3 秒
 
 function renderCard(el,S){
   const {u,v}=S; const civ=DATA.civs[v.c];
@@ -328,9 +329,9 @@ function nextQ(){
   $("qScore").textContent=score; $("qCount").textContent=count;
   if(mode==="timed") resumeTimer();
 }
+function fmtT(s){ return s.toFixed(1)+" 秒"; }
 function answer(choice){ // 1 left, -1 right, 0 tie
   if(answered) return; answered=true;
-  if(mode==="timed") pauseTimer();
   const ok=choice===q.vd.v; count++; if(ok) score++;
   $("qScore").textContent=score; $("qCount").textContent=count;
   const els={1:$("cardL"),"-1":$("cardR"),0:$("btnTie")};
@@ -341,17 +342,17 @@ function answer(choice){ // 1 left, -1 right, 0 tie
   if(store.log.length>5000) store.log=store.log.slice(-5000);
   save();
   if(!ok) wrongs.push({q,choice});
-  setTimeout(()=>{ if(answered && $("scrQuiz").classList.contains("active") && (mode!=="timed"||timeLeft>0)) nextQ(); }, 250);
+  setTimeout(()=>{ if(!(answered && $("scrQuiz").classList.contains("active"))) return; if(mode==="timed" && count>=NQ){ endGame(); return; } nextQ(); }, 250);
 }
 function pauseTimer(){ if(timerId){clearInterval(timerId);timerId=null;} }
 function resumeTimer(){
-  pauseTimer(); lastTick=performance.now();
-  timerId=setInterval(()=>{ const now=performance.now(); timeLeft-=(now-lastTick)/1000; lastTick=now; drawTimer(); if(timeLeft<=0){timeLeft=0;pauseTimer();endGame();} },100);
+  if(timerId) return; lastTick=performance.now();
+  timerId=setInterval(()=>{ const now=performance.now(); elapsed+=(now-lastTick)/1000; lastTick=now; drawTimer(); },100);
 }
-function drawTimer(){ $("timerBar").style.width=(Math.max(0,timeLeft)/TOTAL*100)+"%"; $("qTime").textContent=timeLeft.toFixed(1)+"s"; }
+function drawTimer(){ $("timerBar").style.width=(Math.min(count,NQ)/NQ*100)+"%"; $("qTime").textContent=fmtT(elapsed); }
 function start(m){
-  mode=m; score=0; count=0; wrongs=[]; timeLeft=TOTAL; pauseTimer(); seenPairs=new Set();
-  $("qMode").textContent=(m==="timed"?"30 秒挑戰":"練習模式")+(adv?" · 進階":" · 初階");
+  mode=m; score=0; count=0; wrongs=[]; elapsed=0; pauseTimer(); seenPairs=new Set();
+  $("qMode").textContent=(m==="timed"?NQ+" 題計時":"練習模式")+(adv?" · 進階":" · 初階");
   $("timerWrap").style.display=m==="timed"?"":"none"; $("qTime").textContent=m==="timed"?"":"∞";
   if(m==="timed") drawTimer(); show("scrQuiz"); nextQ();
 }
@@ -359,8 +360,14 @@ function endGame(){
   pauseTimer(); answered=true;
   const key=adv?"adv":"basic";
   let rec="";
-  if(mode==="timed"){ if(score>store.best[key]){store.best[key]=score;rec="　🎉 新紀錄！";} save(); }
-  $("resTitle").innerHTML=(mode==="timed"?"時間到！":"練習結束")+`　答對 ${score} / ${count}${rec}`;
+  let title;
+  if(mode==="timed" && count>=NQ){
+    const wrong=count-score, result=elapsed+wrong*PENALTY;
+    if(store.bestT[key]==null || result<store.bestT[key]){ store.bestT[key]=result; rec="　🎉 新紀錄！"; }
+    save();
+    title=`完成 ${NQ} 題　用時 ${fmtT(elapsed)}　答對 ${score}／${NQ}<br><span style="font-size:15px;color:var(--muted)">成績 ${fmtT(result)}（用時＋每錯一題 ${PENALTY} 秒）${rec}</span>`;
+  } else title=(mode==="timed"?"提前結束":"練習結束")+`　答對 ${score} / ${count}`;
+  $("resTitle").innerHTML=title;
   const side=(S,win)=>`<div class="wside ${win?"wwin":""}"><img src="${DATA.icons[S.v.i]||""}" alt=""><div class="wciv">${DATA.civs[S.v.c][1]}</div><div class="wname">${S.u.zh}</div><div class="wmeta">${AGE[S.v.a]}時代・${ARCH[S.u.arch]}</div>
     <div class="wstats"><span>血量</span><span>${S.v.hp}</span><span>護甲</span><span>近 ${S.v.ma} / 遠 ${S.v.ra}</span><span>攻擊</span><span>${S.v.w.d}（${S.v.w.t==="melee"?"近戰":"遠程"}，每 ${S.v.w.s}s）</span><span>射程</span><span>${S.v.w.r>1?S.v.w.r:"近戰"}</span><span>移速</span><span>${S.v.sp}</span><span>加成</span><span>${S.v.mods.length?S.v.mods.map(m=>m.c.map(g=>clsZh(g)+" +"+m.v).join("／")).join("、"):"無"}</span></div></div>`;
   $("wrongList").innerHTML=wrongs.length?wrongs.map(({q},i)=>{
@@ -394,7 +401,7 @@ function statsTable(rows,title){
 const unitById=id=>DATA.units.find(u=>u.id===id);
 function renderStats(tab){
   const n=store.log.length, w=store.log.filter(x=>!x.ok).length;
-  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。最佳 30 秒：初階 ${store.best.basic}、進階 ${store.best.adv}`:"還沒有紀錄，先玩幾題吧。";
+  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。最佳成績：初階 ${store.bestT.basic==null?"—":fmtT(store.bestT.basic)}、進階 ${store.bestT.adv==null?"—":fmtT(store.bestT.adv)}`:"還沒有紀錄，先玩幾題吧。";
   let html="";
   if(tab==="arch") html=statsTable(agg(x=>[x.al,x.ar],k=>ARCH[k]||k),"兵種類型（出現在任一邊）");
   else if(tab==="pair") html=statsTable(agg(x=>[[x.al,x.ar].sort().join("|")],k=>k.split("|").map(a=>ARCH[a]||a).join(" vs ")).filter(r=>r.n>=2),"對戰組合（至少 2 題）");
@@ -405,7 +412,7 @@ function renderStats(tab){
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");renderStats(b.dataset.t);});
 
 // ---------- wiring ----------
-function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳 30 秒紀錄：初階 ${store.best.basic} 題 · 進階 ${store.best.adv} 題`; }
+function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳成績（${NQ} 題）：初階 ${store.bestT.basic==null?"—":fmtT(store.bestT.basic)} · 進階 ${store.bestT.adv==null?"—":fmtT(store.bestT.adv)}`; }
 $("tgAdv").onclick=()=>{adv=!adv;store.adv=adv;save();syncToggles(); if($("scrQuiz").classList.contains("active")&&answered===false){} };
 $("tgStats").onclick=()=>{showStats=!showStats;store.showStats=showStats;save();syncToggles();document.querySelectorAll(".stats").forEach(s=>s.classList.toggle("hidden",!showStats));};
 $("btnStatsPage").onclick=()=>{ pauseTimer(); renderStats(document.querySelector(".tabs button.on").dataset.t); renderDisp(); $("exportBox").style.display="none"; show("scrStats"); };
@@ -414,7 +421,7 @@ $("btnPractice").onclick=()=>start("practice");
 $("cardL").onclick=()=>answer(1); $("cardR").onclick=()=>answer(-1); $("btnTie").onclick=()=>answer(0);
 $("btnQuit").onclick=()=>endGame();
 $("btnAgain").onclick=()=>start(mode);
-$("btnHome").onclick=$("btnHome2").onclick=()=>{syncToggles();show("scrStart");};
+$("btnHome").onclick=$("btnHome2").onclick=$("btnHomeTop").onclick=()=>{syncToggles();show("scrStart");};
 function unitZh(id){const u=DATA.units.find(x=>x.id===id);return u?u.zh:id;}
 function renderDisp(){
   const n=store.disputes.length; $("dispSummary").textContent=n?`共 ${n} 筆回報（只做紀錄，不影響出題判定）。`:"還沒有回報。在結算頁的錯題卡片下方可以記下你認為的正解。";
@@ -428,7 +435,7 @@ $("btnExport").onclick=()=>{
   try{navigator.clipboard.writeText(box.value);}catch(e){}
 };
 $("btnClearOv").onclick=()=>{ if(confirm("清除所有回報紀錄？")){store.disputes=[];save();renderDisp();} };
-$("btnReset").onclick=()=>{ if(confirm("清除所有答題紀錄與最佳成績？")){store={log:[],best:{basic:0,adv:0},adv,showStats,crossAge,overrides:store.overrides,disputes:store.disputes};save();renderStats("arch");syncToggles();} };
+$("btnReset").onclick=()=>{ if(confirm("清除所有答題紀錄與最佳成績？")){store={log:[],bestT:{basic:null,adv:null},adv,showStats,overrides:store.overrides,disputes:store.disputes};save();renderStats("arch");syncToggles();} };
 document.addEventListener("keydown",e=>{ if(!$("scrQuiz").classList.contains("active"))return; if(e.key==="ArrowLeft")answer(1); else if(e.key==="ArrowRight")answer(-1); else if(e.key==="ArrowDown"||e.key===" "){e.preventDefault();answer(0);} });
 syncToggles();
 })();
