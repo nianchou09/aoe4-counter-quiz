@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AoE4 兵種相剋測驗</title>
+<style>
+:root{--bg:#10151b;--panel:#161d25;--panel2:#1e2731;--line:#34404c;--goldline:#7a6234;--text:#e9dfc4;--muted:#94a0ab;--gold:#d8ab52;--gold2:#f0cf7a;--red:#c8433a;--green:#5aa95d;--blue:#4f8fd6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;min-height:100%}
+body{display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:16px 8px;background:radial-gradient(1200px 600px at 50% -10%,#1b2530 0%,#0a0e13 70%)}
+.app{width:100%;max-width:720px;background:var(--bg);border:1px solid var(--goldline);outline:1px solid #2a2418;outline-offset:2px;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+button{font:inherit;cursor:pointer}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--goldline);background:linear-gradient(180deg,#1c2530,#141b23)}
+header h1{font-size:18px;margin:0;color:var(--gold2);letter-spacing:2px;font-family:Georgia,"Times New Roman","Noto Serif TC","PMingLiU",serif;text-shadow:0 1px 0 #000}
+.tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tg{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:13px}
+.app.in-quiz #tgAdv,.app.in-quiz #btnStatsPage{display:none}
+.tg::before{content:"○ ";opacity:.7}.tg.on::before{content:"● "}
+.lnk{background:transparent;border:0;color:var(--gold);font-size:13px;padding:5px 6px;margin-left:6px;text-decoration:underline dotted;text-underline-offset:3px}
+.lnk:hover{color:var(--gold2)}
+.tg.on{color:#1a1408;border-color:var(--gold2);background:linear-gradient(180deg,var(--gold2),var(--gold));font-weight:700}
+main{display:flex;flex-direction:column;align-items:center;padding:14px;width:100%}
+.screen{display:none;width:100%}.screen.active{display:block}
+.center{text-align:center}
+.big{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1408;border:1px solid #f4dc98;border-radius:6px;box-shadow:0 2px 0 #7a5a1c;padding:14px 26px;font-size:18px;font-weight:700;margin:8px}
+.sec{background:var(--panel2);color:var(--text);border:1px solid var(--goldline);border-radius:6px;padding:12px 22px;font-size:16px;margin:8px}
+.hint{color:var(--muted);font-size:14px;line-height:1.7;max-width:640px;margin:14px auto}
+/* quiz */
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:15px;margin-bottom:10px;padding:0 4px}
+.bar b{color:var(--gold);font-size:22px}
+.timer{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.timer i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:100%;transition:width .2s linear}
+.arena{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:linear-gradient(180deg,#1a222c,#141b23);border:2px solid var(--line);outline:1px solid #0a0e13;border-radius:8px;padding:12px 10px;text-align:center;cursor:pointer;transition:transform .08s,border-color .15s;position:relative;user-select:none}
+.card:hover{transform:translateY(-2px);border-color:var(--gold)}
+.card.win{border-color:var(--green);box-shadow:0 0 0 3px var(--green) inset}
+.card.lose{border-color:var(--red);box-shadow:0 0 0 3px var(--red) inset}
+.card.pick.win::after{content:"✔";}.card.pick.lose::after{content:"✘";}.card.pick::after{content:"";position:absolute;top:8px;right:8px;font-size:11px;background:var(--blue);color:#fff;padding:2px 6px;border-radius:4px}
+.civ{color:var(--gold);font-size:13px;letter-spacing:2px}
+.uname{font-size:21px;font-weight:700;margin:4px 0 2px;color:#f3ecd8}
+.uen{font-size:12px;color:var(--muted);margin-bottom:6px}
+.age{display:inline-block;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-bottom:6px}
+.icon{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;margin:0 auto;border-radius:10px;background:#0f0d0a}
+.stats{margin-top:8px;font-size:13px;text-align:left;display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:0 6px}
+.stats span:nth-child(odd){color:var(--muted)}
+.stats.hidden{display:none}
+.bonus{margin-top:6px;font-size:12px;color:#f0c46a;min-height:16px}
+.bonus.hidden{visibility:hidden}
+.tie{display:block;margin:14px auto 0;background:var(--panel2);border:2px solid var(--goldline);color:var(--text);border-radius:6px;padding:12px 40px;font-size:18px}
+.tie.win{border-color:var(--green);box-shadow:0 0 0 3px var(--green) inset}.tie.lose{border-color:var(--red);box-shadow:0 0 0 3px var(--red) inset}
+.fb{min-height:10px;margin-top:12px;text-align:center;font-size:15px;line-height:1.6}
+.fb .ok{color:var(--green);font-weight:700}.fb .ng{color:var(--red);font-weight:700}
+.next{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1408;border:0;border-radius:8px;padding:8px 22px;font-weight:700;margin-top:6px}
+/* result & stats */
+.res h2{color:var(--gold);text-align:center}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0 16px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+th{color:var(--muted);font-weight:normal;font-size:12px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.meter{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:80px}
+.meter i{display:block;height:100%;background:var(--red)}
+.tabs{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
+.tabs button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:6px 12px}
+.tabs button.on{color:var(--gold2);border-color:var(--gold)}
+.wrong{background:var(--panel);border:1px solid var(--goldline);border-radius:8px;padding:10px;margin:8px 0;font-size:14px}
+.wrow{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.wside{text-align:center;border:2px solid transparent;border-radius:10px;padding:6px}
+.wside.wwin{border-color:var(--green)}
+.wside img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:8px;background:#0f0d0a;display:block;margin-bottom:4px}
+.wstats{margin-top:6px;font-size:11px;text-align:left;display:grid;grid-template-columns:auto 1fr;gap:1px 6px;padding:0 4px;color:var(--text)}.wstats span:nth-child(odd){color:var(--muted)}
+.wciv{color:var(--gold);font-size:12px}.wname{font-weight:700;font-size:15px}.wmeta{color:var(--muted);font-size:11px}
+.wvs{color:var(--muted);font-size:13px;padding:6px 10px;border:2px solid transparent;border-radius:8px}.wvs.wwin{border-color:var(--green);color:var(--green)}
+.dispute{margin-top:8px;font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:8px}
+.dispute button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:5px;padding:3px 8px;font-size:12px}
+.dispute button.sel{border-color:var(--gold);color:var(--gold2)}
+.dok{color:var(--green)}
+.wans{margin-top:6px;color:var(--green);font-weight:700}.wreason{color:var(--muted);margin-top:2px}
+footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1px solid var(--line)}
+@media (max-width:520px){.uname{font-size:16px}.stats{font-size:11px}.tie{padding:10px 26px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>⚔ AoE4 兵種相剋測驗</h1>
+  <div class="tools">
+    <button class="tg" id="tgAdv" title="加入各文明獨特單位">進階：獨特單位</button>
+    <button class="tg on" id="tgStats" title="顯示/隱藏數值">顯示數值</button>
+    <button class="lnk" id="btnStatsPage">📊 統計 ›</button>
+  </div>
+</header>
+<main>
+  <!-- START -->
+  <section class="screen active center" id="scrStart">
+    <p class="hint"><b>點會贏的那一邊</b>，沒有明顯相剋就按「無明顯相剋」。</p>
+    <button class="big" id="btnTimed">⏱ 30 秒挑戰</button>
+    <button class="sec" id="btnPractice">練習模式（不計時）</button>
+    <div id="best" class="hint"></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="scrQuiz">
+    <div class="bar"><span id="qMode"></span><span>答對 <b id="qScore">0</b> / <span id="qCount">0</span></span><span id="qTime"></span></div>
+    <div class="timer" id="timerWrap"><i id="timerBar"></i></div>
+    <div class="arena">
+      <div class="card" id="cardL"></div>
+      <div class="card" id="cardR"></div>
+    </div>
+    <button class="tie" id="btnTie">🤝 無明顯相剋</button>
+    <div class="fb" id="fb"></div>
+    <div class="center"><button class="sec" id="btnQuit" style="font-size:13px;padding:6px 14px">結束</button></div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen res" id="scrResult">
+    <h2 id="resTitle"></h2>
+    <div class="center"><button class="big" id="btnAgain">再來一次</button><button class="sec" id="btnHome">回首頁</button></div>
+    <h3>這次答錯的題目</h3>
+    <div id="wrongList"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="screen res" id="scrStats">
+    <h2>錯誤率統計</h2>
+    <p class="hint center" id="statsSummary"></p>
+    <div class="tabs">
+      <button class="on" data-t="arch">依兵種類型</button>
+      <button data-t="pair">依對戰組合</button>
+      <button data-t="unit">依單位</button>
+      <button data-t="civ">依文明</button>
+    </div>
+    <div id="statsBody"></div>
+    <h3 style="margin-top:18px">判定回報</h3>
+    <p class="hint" id="dispSummary" style="margin:6px auto"></p>
+    <div id="dispList"></div>
+    <div class="center"><button class="sec" id="btnExport">匯出回報文字</button><button class="sec" id="btnClearOv" style="color:var(--red)">清除回報</button></div>
+    <textarea id="exportBox" style="display:none;width:100%;height:160px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font-size:12px;margin-top:8px"></textarea>
+    <div class="center"><button class="sec" id="btnHome2">回首頁</button><button class="sec" id="btnReset" style="color:var(--red)">清除紀錄</button></div>
+  </section>
+</main>
+<footer>數值與圖示來源：AoE4 World（data.aoe4world.com）。判定情境：同成本的兩群互打。判定＝特殊機制例外 ＞ 加成傷害 ＞ 兵種類型規則，僅供學習參考。</footer>
+</div>
+
+<script>
+/*__DATA__*/
+</script>
+<script>
+(function(){
+const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"輕騎兵",HMC:"重騎兵",HA:"騎射手"};
+const CLS_ZH = {cavalry:"騎兵",infantry:"步兵",light:"輕型",heavy:"重型",ranged:"遠程",melee:"近戰",gunpowder:"火藥",elephant:"象",war:"戰",camel:"駱駝",spearman:"長槍兵",crossbowman:"弩兵",archer:"弓兵",horse:"馬",knight:"騎士",armored:"裝甲"};
+const AGE = ["","黑暗","封建","城堡","帝王"];
+
+// matrix[X][Y] = 1 X wins, -1 Y wins, 0 tie, undefined unknown (skip)
+const M = {};
+function set(a,b,v,reason){ (M[a]=M[a]||{})[b]={v,r:reason}; (M[b]=M[b]||{})[a]={v:-v,r:reason}; }
+const A = Object.keys(ARCH);
+A.forEach(a=>set(a,a,0,"同類型單位互打沒有明顯相剋，勝負看數量、升級與操作。"));
+set("SPEAR","LMC",1,"長槍兵對騎兵有加成傷害。");
+set("SPEAR","HMC",1,"長槍兵對騎兵有加成傷害。");
+set("SPEAR","HMI",-1,"重裝步兵護甲高、攻擊強，長槍兵沒有對步兵的加成，打不動。");
+set("SPEAR","ARCHER",-1,"弓兵對輕型近戰步兵有加成，且長槍兵追不到弓兵。");
+set("SPEAR","GUN",-1,"火槍傷害極高，輕型步兵血少沒護甲，靠近前就被打死。");
+set("SPEAR","HA",-1,"騎射手邊打邊退（風箏），長槍兵追不上、打不到。");
+set("LMI","HMI",-1,"重裝步兵護甲高，輕型近戰步兵打不動。");
+set("LMI","ARCHER",-1,"弓兵對輕型近戰步兵有加成傷害。");
+set("LMI","GUN",-1,"火槍傷害極高，輕型步兵血少沒護甲。");
+set("LMI","LMC",1,"輕騎兵近戰能力弱，被近戰步兵纏上會輸。");
+set("LMI","HMC",-1,"重騎兵護甲、傷害都高，輕型步兵又沒有反騎加成。");
+set("LMI","HA",-1,"騎射手風箏，近戰步兵追不上。");
+set("HMI","ARCHER",1,"重裝步兵遠程護甲高，弓箭傷害幾乎被吸收。");
+set("HMI","XBOW",-1,"弩兵對重型單位有加成傷害。");
+set("HMI","GUN",-1,"火槍傷害極高，護甲吸收不了。");
+set("HMI","LMC",1,"輕騎兵近戰弱，重裝步兵護甲高、傷害穩。");
+set("HMI","HMC",-1,"重騎兵機動與傷害壓過重裝步兵（遊戲說明：重裝步兵被騎士／槍騎兵克制）。");
+set("HMI","HA",-1,"騎射手風箏，重裝步兵又慢，永遠追不上。");
+set("ARCHER","LMC",-1,"輕騎兵速度快、對遠程單位有加成。");
+set("ARCHER","HMC",-1,"重騎兵衝進弓兵陣，弓箭傷害被護甲吸收。");
+set("ARCHER","HA",1,"騎射手血少、遠程護甲低，被步弓集火會輸（遊戲說明：騎射手弱於遠程單位）。");
+set("XBOW","LMC",-1,"輕騎兵對遠程單位有加成，弩兵射速慢又脆。");
+set("XBOW","HMC",1,"弩兵對重型單位有加成傷害。");
+set("XBOW","HA",1,"騎射手血少、遠程護甲低，弱於遠程單位。");
+set("GUN","LMC",-1,"輕騎兵對遠程單位有加成，火槍射速慢，被貼身就輸。");
+set("GUN","HA",1,"騎射手血少，火槍一發傷害極高。");
+set("LMC","HMC",-1,"重騎兵護甲與傷害全面壓過輕騎兵。");
+set("LMC","HA",1,"輕騎兵對遠程單位有加成，速度又追得上騎射手。");
+// unknown pairs (skipped): SPEAR-LMI, SPEAR-XBOW, LMI-XBOW, ARCHER-XBOW, ARCHER-GUN, XBOW-GUN, GUN-HMC, HMC-HA
+
+// unit-specific mechanics exceptions (equal-cost group fight); take precedence over everything but user overrides
+const EXC=[
+  {u:["landsknecht","gilded-landsknecht"],vs:["SPEAR","LMI","HMI"],v:1,r:"國土傭僕的雙手大劍有範圍傷害，群戰一刀掃到一片，步兵群扛不住。"},
+  {u:["kanabo-samurai"],vs:["HMC"],v:1,r:"金碎棒武士的攻擊附帶目標最大血量 6% 的加成，對高血量的重騎兵特別有效。"},
+  {u:["black-rider"],vs:["ARCHER"],v:1,r:"黑騎士是重甲火槍騎兵，弓箭傷害被護甲吸收，還能邊打邊退。"},
+  {u:["black-rider"],vs:["GUN"],v:1,r:"黑騎士 225 血、4 遠防、45 攻，三槍打死火槍兵；火槍兵要七槍才打死黑騎士，黑騎士又快得多。"},
+  {u:["fire-lancer"],vs:["SPEAR"],v:-1,r:"火長矛騎兵近戰弱，長槍兵對騎兵有加成。"},
+  {u:["javelin-thrower","mansa-javelineer"],vs:["LMI"],v:0,r:"標槍投擲者的加成是對遠程單位，對輕型近戰步兵沒有加成；輕步兵速度不慢，貼上來就能打，互有勝負。"},
+];
+function exception(L,R){
+  for(const e of EXC){
+    if(e.u.includes(L.u.id) && e.vs.includes(R.u.arch) && !e.u.includes(R.u.id)) return {v:e.v,r:e.r};
+    if(e.u.includes(R.u.id) && e.vs.includes(L.u.arch) && !e.u.includes(L.u.id)) return {v:-e.v,r:e.r};
+  }
+  return null;
+}
+function ovKey(a,b){ return a<b?a+"|"+b:b+"|"+a; }
+function userOverride(L,R){
+  const k=ovKey(L.u.id,R.u.id); const o=store.overrides&&store.overrides[k]; if(!o) return null;
+  const v = L.u.id<R.u.id ? o.v : -o.v;
+  return {v, r:"（你自訂的判定）"+(o.note||"")};
+}
+// override rules take precedence over bonus damage
+function override(x,y){
+  if(x.arch==="HA" && (y.arch==="SPEAR"||y.arch==="LMI"||y.arch==="HMI")) return {v:1,r:"騎射手邊打邊退（風箏），近戰步兵追不上；就算對方對騎兵有加成也打不到。"};
+  if(y.arch==="HA" && (x.arch==="SPEAR"||x.arch==="LMI"||x.arch==="HMI")) return {v:-1,r:"騎射手邊打邊退（風箏），近戰步兵追不上；就算對方對騎兵有加成也打不到。"};
+  return null;
+}
+function bonusOf(av,bv){ // best bonus of variant av vs variant bv
+  let best=null;
+  for(const m of av.mods){
+    for(const g of m.c){
+      if(g.every(c=>bv.cls.includes(c))){
+        const ratio=m.v/av.w.d;
+        if(!best||ratio>best.ratio) best={ratio,v:m.v,g};
+      }
+    }
+  }
+  return best;
+}
+function clsZh(g){ return g.map(c=>CLS_ZH[c]||c).join(""); }
+// returns {v:1 left wins,-1 right wins,0 tie, r:reason} or null
+function verdict(L,R){
+  const ex=exception(L,R); if(ex) return ex;
+  const o=override(L.u,R.u); if(o) return o;
+  const bL=bonusOf(L.v,R.v), bR=bonusOf(R.v,L.v);
+  const nL=L.u.zh, nR=R.u.zh;
+  if(bL&&!bR) return {v:1,r:`${nL}對「${clsZh(bL.g)}」有 +${bL.v} 加成傷害（基礎 ${L.v.w.d}），${nR}沒有反制加成。`};
+  if(bR&&!bL) return {v:-1,r:`${nR}對「${clsZh(bR.g)}」有 +${bR.v} 加成傷害（基礎 ${R.v.w.d}），${nL}沒有反制加成。`};
+  if(bL&&bR){
+    if(bL.ratio>bR.ratio*2) return {v:1,r:`雙方都有加成，但${nL}的加成比例大得多（+${bL.v}/${L.v.w.d} vs +${bR.v}/${R.v.w.d}）。`};
+    if(bR.ratio>bL.ratio*2) return {v:-1,r:`雙方都有加成，但${nR}的加成比例大得多（+${bR.v}/${R.v.w.d} vs +${bL.v}/${L.v.w.d}）。`};
+    return null;
+  }
+  const m=M[L.u.arch]&&M[L.u.arch][R.u.arch];
+  if(!m) return null;
+  if(m.v===0){
+    // same type: compare cost-adjusted combat power (equal-resource fight): (hp × dps × armor factor) / cost^1.5
+    const cost=v=>v.cost.f+v.cost.w+v.cost.g+v.cost.s+(v.cost.o||0)+(v.cost.sv||0);
+    const useCost = cost(L.v)>0 && cost(R.v)>0; // free/tribute units: compare raw stats instead
+    const P=v=>v.hp*(v.w.d/v.w.s)*(1+(v.ma+v.ra)/20)/(useCost?Math.pow(cost(v),1.5):1);
+    const pL=P(L.v), pR=P(R.v), ratio=Math.max(pL,pR)/Math.min(pL,pR);
+    const stat=S=>`血量 ${S.v.hp}／攻擊 ${S.v.w.d}／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
+    if(ratio>=1.25){
+      const [hi,lo]=pL>pR?[L,R]:[R,L];
+      const ageNote = hi.v.a!==lo.v.a ? `（${AGE[hi.v.a]}時代 vs ${AGE[lo.v.a]}時代）` : "";
+      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高${ageNote}：${hi.u.zh} ${stat(hi)}；${lo.u.zh} ${stat(lo)}。`};
+    }
+    return {v:0, r:`同類型單位，同成本下戰力相近：${L.u.zh} ${stat(L)}；${R.u.zh} ${stat(R)}。沒有明顯相剋，勝負看操作與升級。`};
+  }
+  return {v:m.v,r:m.r};
+}
+
+// ---------- state ----------
+const LS="aoe4cq";
+let store=load();
+function load(){ try{return JSON.parse(localStorage.getItem(LS))||{}}catch(e){return {}} }
+function save(){ try{localStorage.setItem(LS,JSON.stringify(store));}catch(e){} }
+store.log=store.log||[]; store.best=store.best||{basic:0,adv:0};
+let adv=!!store.adv, showStats=store.showStats!==false, crossAge=false; // 一律同時代對比
+store.overrides=store.overrides||{}; store.disputes=store.disputes||[];
+
+const $=id=>document.getElementById(id);
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); document.querySelector(".app").classList.toggle("in-quiz", id==="scrQuiz"); window.scrollTo(0,0); }
+function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function pool(){ return DATA.units.filter(u=>adv?true:u.basic); }
+function pickSide(u){ const v=rnd(u.vars); return {u,v}; }
+let seenPairs=new Set();
+function makeQ(){
+  const P=pool();
+  // 30%: replay a matchup previously answered wrong (same unit ids)
+  const wrong=store.log.filter(x=>!x.ok && P.find(u=>u.id===x.l) && P.find(u=>u.id===x.r));
+  for(let t=0;t<200;t++){
+    let ul,ur;
+    if(wrong.length && Math.random()<0.3){ const w=rnd(wrong); ul=P.find(u=>u.id===w.l); ur=P.find(u=>u.id===w.r); if(Math.random()<.5)[ul,ur]=[ur,ul]; }
+    else { ul=rnd(P); ur=rnd(P); }
+    const L=pickSide(ul);
+    let R;
+    if(crossAge) R=pickSide(ur);
+    else { const same=ur.vars.filter(v=>v.a===L.v.a); if(!same.length) continue; R={u:ur,v:rnd(same)}; }
+    if(L.u.id===R.u.id && L.v.c===R.v.c) continue; // 同文明同兵種不出
+    const vd=verdict(L,R);
+    if(!vd) continue;
+    const pk=[ul.id,ur.id].sort().join("|");
+    if(seenPairs.has(pk) && t<150) continue;
+    seenPairs.add(pk);
+    return {L,R,vd};
+  }
+  return null;
+}
+
+let mode="timed", q=null, answered=false, score=0, count=0, wrongs=[], timeLeft=30, timerId=null, lastTick=0;
+const TOTAL=30;
+
+function renderCard(el,S){
+  const {u,v}=S; const civ=DATA.civs[v.c];
+  const w=v.w;
+  const tier=/^Early|^Vanguard/.test(v.n)?"早期":/^Veteran|^Hardened/.test(v.n)?"老練":/^Elite/.test(v.n)?"精銳":"";
+  el.innerHTML=`<div class="civ">${civ[1]}</div>
+  <div class="uname">${tier?tier+" ":""}${u.zh}</div>
+  <span class="age">${AGE[v.a]}時代</span>
+  <img class="icon" src="${DATA.icons[v.i]||""}" alt="">
+  <div class="stats ${showStats?"":"hidden"}">
+    <span>血量</span><span>${v.hp}</span>
+    <span>護甲</span><span>近 ${v.ma} / 遠 ${v.ra}</span>
+    <span>攻擊</span><span>${w.d}（${w.t==="melee"?"近戰":"遠程"}，每 ${w.s}s）</span>
+    <span>射程</span><span>${w.r>1?w.r:"近戰"}</span>
+    <span>移速</span><span>${v.sp}</span>
+    <span>成本</span><span>${[v.cost.f?"食"+v.cost.f:"",v.cost.w?"木"+v.cost.w:"",v.cost.g?"金"+v.cost.g:"",v.cost.o?"橄欖油"+v.cost.o:"",v.cost.sv?"白銀"+v.cost.sv:""].filter(Boolean).join(" ")||"免費"}</span>
+  </div>
+`;
+}
+function nextQ(){
+  q=makeQ(); if(!q){ alert("找不到題目"); return; }
+  answered=false;
+  ["cardL","cardR","btnTie"].forEach(id=>$(id).className=$(id).className.replace(/\b(win|lose|pick)\b/g,"").trim());
+  renderCard($("cardL"),q.L); renderCard($("cardR"),q.R);
+  
+  $("qScore").textContent=score; $("qCount").textContent=count;
+  if(mode==="timed") resumeTimer();
+}
+function answer(choice){ // 1 left, -1 right, 0 tie
+  if(answered) return; answered=true;
+  if(mode==="timed") pauseTimer();
+  const ok=choice===q.vd.v; count++; if(ok) score++;
+  $("qScore").textContent=score; $("qCount").textContent=count;
+  const els={1:$("cardL"),"-1":$("cardR"),0:$("btnTie")};
+  els[choice].classList.add("pick");
+  els[q.vd.v].classList.add("win");
+  if(!ok) els[choice].classList.add("lose");
+  store.log.push({t:Date.now(),l:q.L.u.id,r:q.R.u.id,cl:q.L.v.c,cr:q.R.v.c,al:q.L.u.arch,ar:q.R.u.arch,ok,adv});
+  if(store.log.length>5000) store.log=store.log.slice(-5000);
+  save();
+  if(!ok) wrongs.push({q,choice});
+  setTimeout(()=>{ if(answered && $("scrQuiz").classList.contains("active") && (mode!=="timed"||timeLeft>0)) nextQ(); }, 250);
+}
+function pauseTimer(){ if(timerId){clearInterval(timerId);timerId=null;} }
+function resumeTimer(){
+  pauseTimer(); lastTick=performance.now();
+  timerId=setInterval(()=>{ const now=performance.now(); timeLeft-=(now-lastTick)/1000; lastTick=now; drawTimer(); if(timeLeft<=0){timeLeft=0;pauseTimer();endGame();} },100);
+}
+function drawTimer(){ $("timerBar").style.width=(Math.max(0,timeLeft)/TOTAL*100)+"%"; $("qTime").textContent=timeLeft.toFixed(1)+"s"; }
+function start(m){
+  mode=m; score=0; count=0; wrongs=[]; timeLeft=TOTAL; pauseTimer(); seenPairs=new Set();
+  $("qMode").textContent=(m==="timed"?"30 秒挑戰":"練習模式")+(adv?" · 進階":" · 初階");
+  $("timerWrap").style.display=m==="timed"?"":"none"; $("qTime").textContent=m==="timed"?"":"∞";
+  if(m==="timed") drawTimer(); show("scrQuiz"); nextQ();
+}
+function endGame(){
+  pauseTimer(); answered=true;
+  const key=adv?"adv":"basic";
+  let rec="";
+  if(mode==="timed"){ if(score>store.best[key]){store.best[key]=score;rec="　🎉 新紀錄！";} save(); }
+  $("resTitle").innerHTML=(mode==="timed"?"時間到！":"練習結束")+`　答對 ${score} / ${count}${rec}`;
+  const side=(S,win)=>`<div class="wside ${win?"wwin":""}"><img src="${DATA.icons[S.v.i]||""}" alt=""><div class="wciv">${DATA.civs[S.v.c][1]}</div><div class="wname">${S.u.zh}</div><div class="wmeta">${AGE[S.v.a]}時代・${ARCH[S.u.arch]}</div>
+    <div class="wstats"><span>血量</span><span>${S.v.hp}</span><span>護甲</span><span>近 ${S.v.ma} / 遠 ${S.v.ra}</span><span>攻擊</span><span>${S.v.w.d}（${S.v.w.t==="melee"?"近戰":"遠程"}，每 ${S.v.w.s}s）</span><span>射程</span><span>${S.v.w.r>1?S.v.w.r:"近戰"}</span><span>移速</span><span>${S.v.sp}</span><span>加成</span><span>${S.v.mods.length?S.v.mods.map(m=>m.c.map(g=>clsZh(g)+" +"+m.v).join("／")).join("、"):"無"}</span></div></div>`;
+  $("wrongList").innerHTML=wrongs.length?wrongs.map(({q},i)=>{
+    const w=q.vd.v===0?"無明顯相剋":(q.vd.v===1?"左邊 "+q.L.u.zh:"右邊 "+q.R.u.zh);
+    return `<div class="wrong" data-i="${i}"><div class="wrow">${side(q.L,q.vd.v===1)}<div class="wvs ${q.vd.v===0?"wwin":""}">${q.vd.v===0?"無明顯相剋":"vs"}</div>${side(q.R,q.vd.v===-1)}</div><div class="wans">正解：${w}</div><div class="wreason">${q.vd.r}</div>
+    <div class="dispute"><span class="dq">覺得判定有誤？記下你認為的正解：</span><button data-v="1">左邊 ${q.L.u.zh}</button><button data-v="0">平手</button><button data-v="-1">右邊 ${q.R.u.zh}</button><span class="dok"></span></div></div>`;
+  }).join(""):"<p class='hint'>全對，沒有錯題 👍</p>";
+  document.querySelectorAll(".dispute button").forEach(b=>b.onclick=()=>{
+    const box=b.closest(".wrong"); const q=wrongs[+box.dataset.i].q; const v=+b.dataset.v;
+    store.disputes.push({t:Date.now(),l:q.L.u.id,r:q.R.u.id,cl:q.L.v.c,cr:q.R.v.c,al:q.L.v.a,ar:q.R.v.a,orig:q.vd.v,user:v,reason:q.vd.r});
+    save();
+    box.querySelectorAll(".dispute button").forEach(x=>x.classList.toggle("sel",x===b));
+    const sv=x=>x===0?"無明顯相剋":(x===1?"左":"右");
+    const line=`${DATA.civs[q.L.v.c][1]} ${q.L.u.zh}(${AGE[q.L.v.a]}) vs ${DATA.civs[q.R.v.c][1]} ${q.R.u.zh}(${AGE[q.R.v.a]})｜原判定：${sv(q.vd.v)}｜我認為：${sv(v)}｜原因：${q.vd.r}`;
+    let copied=false; try{ navigator.clipboard.writeText(line); copied=true; }catch(e){}
+    box.querySelector(".dok").textContent=copied?"已記錄並複製到剪貼簿，直接貼給 Claude 就好":"已記錄（統計 › 判定回報 可匯出）";
+  });
+  show("scrResult");
+}
+
+// ---------- stats ----------
+function agg(keyFn,labelFn){
+  const m={};
+  for(const x of store.log){ for(const k of keyFn(x)){ const o=m[k]=m[k]||{n:0,w:0}; o.n++; if(!x.ok)o.w++; } }
+  return Object.entries(m).map(([k,o])=>({k,label:labelFn(k),n:o.n,w:o.w,rate:o.w/o.n})).sort((a,b)=>b.rate-a.rate||b.n-a.n);
+}
+function statsTable(rows,title){
+  if(!rows.length) return "<p class='hint'>還沒有紀錄</p>";
+  return `<table><tr><th>${title}</th><th>答題</th><th>答錯</th><th>錯誤率</th><th></th></tr>`+rows.map(r=>`<tr><td>${r.label}</td><td class="num">${r.n}</td><td class="num">${r.w}</td><td class="num">${(r.rate*100).toFixed(0)}%</td><td><div class="meter"><i style="width:${r.rate*100}%"></i></div></td></tr>`).join("")+"</table>";
+}
+const unitById=id=>DATA.units.find(u=>u.id===id);
+function renderStats(tab){
+  const n=store.log.length, w=store.log.filter(x=>!x.ok).length;
+  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。最佳 30 秒：初階 ${store.best.basic}、進階 ${store.best.adv}`:"還沒有紀錄，先玩幾題吧。";
+  let html="";
+  if(tab==="arch") html=statsTable(agg(x=>[x.al,x.ar],k=>ARCH[k]||k),"兵種類型（出現在任一邊）");
+  else if(tab==="pair") html=statsTable(agg(x=>[[x.al,x.ar].sort().join("|")],k=>k.split("|").map(a=>ARCH[a]||a).join(" vs ")).filter(r=>r.n>=2),"對戰組合（至少 2 題）");
+  else if(tab==="unit") html=statsTable(agg(x=>[x.l,x.r],k=>{const u=unitById(k);return u?u.zh:k}).filter(r=>r.n>=2),"單位（至少 2 題）");
+  else html=statsTable(agg(x=>[x.cl,x.cr],k=>DATA.civs[k]?DATA.civs[k][1]:k),"文明");
+  $("statsBody").innerHTML=html;
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");renderStats(b.dataset.t);});
+
+// ---------- wiring ----------
+function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳 30 秒紀錄：初階 ${store.best.basic} 題 · 進階 ${store.best.adv} 題`; }
+$("tgAdv").onclick=()=>{adv=!adv;store.adv=adv;save();syncToggles(); if($("scrQuiz").classList.contains("active")&&answered===false){} };
+$("tgStats").onclick=()=>{showStats=!showStats;store.showStats=showStats;save();syncToggles();document.querySelectorAll(".stats").forEach(s=>s.classList.toggle("hidden",!showStats));};
+$("btnStatsPage").onclick=()=>{ pauseTimer(); renderStats(document.querySelector(".tabs button.on").dataset.t); renderDisp(); $("exportBox").style.display="none"; show("scrStats"); };
+$("btnTimed").onclick=()=>start("timed");
+$("btnPractice").onclick=()=>start("practice");
+$("cardL").onclick=()=>answer(1); $("cardR").onclick=()=>answer(-1); $("btnTie").onclick=()=>answer(0);
+$("btnQuit").onclick=()=>endGame();
+$("btnAgain").onclick=()=>start(mode);
+$("btnHome").onclick=$("btnHome2").onclick=()=>{syncToggles();show("scrStart");};
+function unitZh(id){const u=DATA.units.find(x=>x.id===id);return u?u.zh:id;}
+function renderDisp(){
+  const n=store.disputes.length; $("dispSummary").textContent=n?`共 ${n} 筆回報（只做紀錄，不影響出題判定）。`:"還沒有回報。在結算頁的錯題卡片下方可以記下你認為的正解。";
+  const s=v=>v===0?"無明顯相剋":(v===1?"左邊":"右邊");
+  $("dispList").innerHTML=store.disputes.slice().reverse().map((d,ri)=>{const i=store.disputes.length-1-ri; return `<div class="wrong" style="font-size:13px"><div><b>${DATA.civs[d.cl][1]} ${unitZh(d.l)}</b>（${AGE[d.al]}） vs <b>${DATA.civs[d.cr][1]} ${unitZh(d.r)}</b>（${AGE[d.ar]}）</div><div style="margin-top:4px">原判定：${s(d.orig)}　→　你認為：<span style="color:var(--gold2)">${s(d.user)}</span></div><div class="wreason">${d.reason}</div><div style="margin-top:4px;color:var(--muted);font-size:11px">${new Date(d.t).toLocaleString()}　<button class="lnk" data-del="${i}" style="font-size:11px;padding:0">刪除</button></div></div>`;}).join("");
+  document.querySelectorAll("#dispList [data-del]").forEach(b=>b.onclick=()=>{store.disputes.splice(+b.dataset.del,1);save();renderDisp();});
+}
+$("btnExport").onclick=()=>{
+  const lines=store.disputes.map(d=>{const s=v=>v===0?"無明顯相剋":(v===1?"左":"右"); return `${DATA.civs[d.cl][1]} ${unitZh(d.l)}(${AGE[d.al]}) vs ${DATA.civs[d.cr][1]} ${unitZh(d.r)}(${AGE[d.ar]})｜原判定：${s(d.orig)}｜我認為：${s(d.user)}｜原因：${d.reason}`;});
+  const box=$("exportBox"); box.style.display="block"; box.value=lines.length?lines.join("\n"):"（沒有回報紀錄）"; box.focus(); box.select();
+  try{navigator.clipboard.writeText(box.value);}catch(e){}
+};
+$("btnClearOv").onclick=()=>{ if(confirm("清除所有回報紀錄？")){store.disputes=[];save();renderDisp();} };
+$("btnReset").onclick=()=>{ if(confirm("清除所有答題紀錄與最佳成績？")){store={log:[],best:{basic:0,adv:0},adv,showStats,crossAge,overrides:store.overrides,disputes:store.disputes};save();renderStats("arch");syncToggles();} };
+document.addEventListener("keydown",e=>{ if(!$("scrQuiz").classList.contains("active"))return; if(e.key==="ArrowLeft")answer(1); else if(e.key==="ArrowRight")answer(-1); else if(e.key==="ArrowDown"||e.key===" "){e.preventDefault();answer(0);} });
+syncToggles();
+})();
+</script>
+</body>
+</html>
