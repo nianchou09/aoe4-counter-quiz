@@ -268,7 +268,8 @@ const LS="aoe4cq";
 let store=load();
 function load(){ try{return JSON.parse(localStorage.getItem(LS))||{}}catch(e){return {}} }
 function save(){ try{localStorage.setItem(LS,JSON.stringify(store));}catch(e){} }
-store.log=store.log||[]; store.bestT=store.bestT||{basic:null,adv:null}; // 最佳成績（秒，越低越好）
+store.log=store.log||[]; store.bestT=store.bestT||{basic:null,adv:null}; // 最佳成績 {acc:正確率%, t:秒}；先比正確率，再比時間
+for(const k of ["basic","adv"]) if(typeof store.bestT[k]==="number") store.bestT[k]=null; // 舊格式（純秒數）作廢
 let adv=!!store.adv, showStats=store.showStats!==false, crossAge=false; // 一律同時代對比
 store.overrides=store.overrides||{}; store.disputes=store.disputes||[];
 
@@ -303,7 +304,7 @@ function makeQ(){
 }
 
 let mode="timed", q=null, answered=false, score=0, count=0, wrongs=[], elapsed=0, timerId=null, lastTick=0;
-const NQ=20, PENALTY=3; // 固定 20 題；每錯一題加 3 秒
+const NQ=20; // 固定 20 題
 
 function renderCard(el,S){
   const {u,v}=S; const civ=DATA.civs[v.c];
@@ -333,6 +334,7 @@ function nextQ(){
   if(mode==="timed") resumeTimer();
 }
 function fmtT(s){ return s.toFixed(1)+" 秒"; }
+function fmtBest(b){ return b==null?"—":`${b.acc}%／${fmtT(b.t)}`; }
 function answer(choice){ // 1 left, -1 right, 0 tie
   if(answered) return; answered=true;
   const ok=choice===q.vd.v; count++; if(ok) score++;
@@ -365,10 +367,10 @@ function endGame(){
   let rec="";
   let title;
   if(mode==="timed" && count>=NQ){
-    const wrong=count-score, result=elapsed+wrong*PENALTY;
-    if(store.bestT[key]==null || result<store.bestT[key]){ store.bestT[key]=result; rec="　🎉 新紀錄！"; }
+    const acc=Math.round(score/NQ*100), prev=store.bestT[key];
+    if(prev==null || acc>prev.acc || (acc===prev.acc && elapsed<prev.t)){ store.bestT[key]={acc,t:elapsed}; rec="　🎉 新紀錄！"; }
     save();
-    title=`完成 ${NQ} 題　用時 ${fmtT(elapsed)}　答對 ${score}／${NQ}<br><span style="font-size:15px;color:var(--muted)">成績 ${fmtT(result)}（用時＋每錯一題 ${PENALTY} 秒）${rec}</span>`;
+    title=`完成 ${NQ} 題　答對 ${score}／${NQ}<br><span style="font-size:26px;color:var(--gold2)">正確率 ${acc}%</span><br><span style="font-size:15px;color:var(--muted)">用時 ${fmtT(elapsed)}　平均 ${(elapsed/NQ).toFixed(1)} 秒／題${rec}</span>`;
   } else title=(mode==="timed"?"提前結束":"練習結束")+`　答對 ${score} / ${count}`;
   $("resTitle").innerHTML=title;
   const side=(S,win)=>`<div class="wside ${win?"wwin":""}"><img src="${DATA.icons[S.v.i]||""}" alt=""><div class="wciv">${DATA.civs[S.v.c][1]}</div><div class="wname">${S.u.zh}</div><div class="wmeta">${AGE[S.v.a]}時代・${ARCH[S.u.arch]}</div>
@@ -404,7 +406,7 @@ function statsTable(rows,title){
 const unitById=id=>DATA.units.find(u=>u.id===id);
 function renderStats(tab){
   const n=store.log.length, w=store.log.filter(x=>!x.ok).length;
-  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。最佳成績：初階 ${store.bestT.basic==null?"—":fmtT(store.bestT.basic)}、進階 ${store.bestT.adv==null?"—":fmtT(store.bestT.adv)}`:"還沒有紀錄，先玩幾題吧。";
+  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。最佳成績：初階 ${fmtBest(store.bestT.basic)}、進階 ${fmtBest(store.bestT.adv)}`:"還沒有紀錄，先玩幾題吧。";
   let html="";
   if(tab==="arch") html=statsTable(agg(x=>[x.al,x.ar],k=>ARCH[k]||k),"兵種類型（出現在任一邊）");
   else if(tab==="pair") html=statsTable(agg(x=>[[x.al,x.ar].sort().join("|")],k=>k.split("|").map(a=>ARCH[a]||a).join(" vs ")).filter(r=>r.n>=2),"對戰組合（至少 2 題）");
@@ -415,7 +417,7 @@ function renderStats(tab){
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");renderStats(b.dataset.t);});
 
 // ---------- wiring ----------
-function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳成績（${NQ} 題）：初階 ${store.bestT.basic==null?"—":fmtT(store.bestT.basic)} · 進階 ${store.bestT.adv==null?"—":fmtT(store.bestT.adv)}`; }
+function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳成績（${NQ} 題）：初階 ${fmtBest(store.bestT.basic)} · 進階 ${fmtBest(store.bestT.adv)}`; }
 $("tgAdv").onclick=()=>{adv=!adv;store.adv=adv;save();syncToggles(); if($("scrQuiz").classList.contains("active")&&answered===false){} };
 $("tgStats").onclick=()=>{showStats=!showStats;store.showStats=showStats;save();syncToggles();document.querySelectorAll(".stats").forEach(s=>s.classList.toggle("hidden",!showStats));};
 $("btnStatsPage").onclick=()=>{ if($("scrStats").classList.contains("active")){ syncToggles(); show("scrStart"); return; } pauseTimer(); renderStats(document.querySelector(".tabs button.on").dataset.t); renderDisp(); $("exportBox").style.display="none"; show("scrStats"); };
