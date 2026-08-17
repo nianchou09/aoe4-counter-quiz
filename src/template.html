@@ -138,7 +138,7 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
     <h3 style="margin-top:18px">判定回報</h3>
     <p class="hint" id="dispSummary" style="margin:6px auto"></p>
     <div id="dispList"></div>
-    <div class="center"><button class="sec" id="btnExport">匯出回報文字</button><button class="sec" id="btnClearOv" style="color:var(--red)">清除回報</button></div>
+    <div class="center"><button class="sec" id="btnExport">匯出回報文字（複製）</button><button class="sec" id="btnClearOv" style="color:var(--red)">清除回報</button></div>
     <textarea id="exportBox" style="display:none;width:100%;height:160px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font-size:12px;margin-top:8px"></textarea>
     <div class="center"><button class="sec" id="btnHome2">回首頁</button><button class="sec" id="btnReset" style="color:var(--red)">清除紀錄</button></div>
   </section>
@@ -247,16 +247,19 @@ function verdict(L,R){
   const m=M[L.u.arch]&&M[L.u.arch][R.u.arch];
   if(!m) return null;
   if(m.v===0){
-    // same type: compare cost-adjusted combat power (equal-resource fight): (hp × dps × armor factor) / cost^1.5
+    // 同類型：先看戰鬥數值本身有沒有差距，再看同成本下的戰力
     const cost=v=>v.cost.f+v.cost.w+v.cost.g+v.cost.s+(v.cost.o||0)+(v.cost.sv||0);
-    const useCost = cost(L.v)>0 && cost(R.v)>0; // free/tribute units: compare raw stats instead
-    const P=v=>v.hp*(v.w.d/v.w.s)*(1+(v.ma+v.ra)/20)/(useCost?Math.pow(cost(v),1.5):1);
+    const RAW=v=>v.hp*(v.w.d/v.w.s)*(1+(v.ma+v.ra)/20);
+    const useCost = cost(L.v)>0 && cost(R.v)>0; // 免費單位只比數值
+    const P=v=>RAW(v)/(useCost?Math.pow(cost(v),1.5):1);
+    const rawRatio=Math.max(RAW(L.v),RAW(R.v))/Math.min(RAW(L.v),RAW(R.v));
     const pL=P(L.v), pR=P(R.v), ratio=Math.max(pL,pR)/Math.min(pL,pR);
     const stat=S=>`血量 ${S.v.hp}／攻擊 ${S.v.w.d}／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
+    if(rawRatio<1.1) // 數值幾乎相同：便宜只是文明的經濟優勢，不算相剋
+      return {v:0, r:`同類型單位，戰鬥數值幾乎相同（${L.u.zh} ${stat(L)}；${R.u.zh} ${stat(R)}），成本差異屬於文明經濟優勢，不算相剋。`};
     if(ratio>=1.25){
       const [hi,lo]=pL>pR?[L,R]:[R,L];
-      const ageNote = hi.v.a!==lo.v.a ? `（${AGE[hi.v.a]}時代 vs ${AGE[lo.v.a]}時代）` : "";
-      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高${ageNote}：${hi.u.zh} ${stat(hi)}；${lo.u.zh} ${stat(lo)}。`};
+      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高：${hi.u.zh} ${stat(hi)}；${lo.u.zh} ${stat(lo)}。`};
     }
     return {v:0, r:`同類型單位，同成本下戰力相近：${L.u.zh} ${stat(L)}；${R.u.zh} ${stat(R)}。沒有明顯相剋，勝負看操作與升級。`};
   }
@@ -388,7 +391,7 @@ function endGame(){
     const sv=x=>x===0?"無明顯相剋":(x===1?"左":"右");
     const line=`${DATA.civs[q.L.v.c][1]} ${q.L.u.zh}(${AGE[q.L.v.a]}) vs ${DATA.civs[q.R.v.c][1]} ${q.R.u.zh}(${AGE[q.R.v.a]})｜原判定：${sv(q.vd.v)}｜我認為：${sv(v)}｜原因：${q.vd.r}`;
     let copied=false; try{ navigator.clipboard.writeText(line); copied=true; }catch(e){}
-    box.querySelector(".dok").textContent=copied?"已記錄並複製到剪貼簿，直接貼給 Claude 就好":"已記錄（統計 › 判定回報 可匯出）";
+    box.querySelector(".dok").textContent=copied?"已存到「統計 › 判定回報」，並複製了一行文字":"已存到「統計 › 判定回報」";
   });
   show("scrResult");
 }
@@ -429,7 +432,7 @@ $("btnAgain").onclick=()=>start(mode);
 $("btnHome").onclick=$("btnHome2").onclick=()=>{syncToggles();show("scrStart");};
 function unitZh(id){const u=DATA.units.find(x=>x.id===id);return u?u.zh:id;}
 function renderDisp(){
-  const n=store.disputes.length; $("dispSummary").textContent=n?`共 ${n} 筆回報（只做紀錄，不影響出題判定）。`:"還沒有回報。在結算頁的錯題卡片下方可以記下你認為的正解。";
+  const n=store.disputes.length; $("dispSummary").textContent=n?`共 ${n} 筆回報（只存在這台裝置，不影響出題判定）。想讓判定被修正，請按下面的按鈕匯出文字，回報給作者。`:"還沒有回報。在結算頁的錯題卡片下方可以記下你認為的正解。";
   const s=v=>v===0?"無明顯相剋":(v===1?"左邊":"右邊");
   $("dispList").innerHTML=store.disputes.slice().reverse().map((d,ri)=>{const i=store.disputes.length-1-ri; return `<div class="wrong" style="font-size:13px"><div><b>${DATA.civs[d.cl][1]} ${unitZh(d.l)}</b>（${AGE[d.al]}） vs <b>${DATA.civs[d.cr][1]} ${unitZh(d.r)}</b>（${AGE[d.ar]}）</div><div style="margin-top:4px">原判定：${s(d.orig)}　→　你認為：<span style="color:var(--gold2)">${s(d.user)}</span></div><div class="wreason">${d.reason}</div><div style="margin-top:4px;color:var(--muted);font-size:11px">${new Date(d.t).toLocaleString()}　<button class="lnk" data-del="${i}" style="font-size:11px;padding:0">刪除</button></div></div>`;}).join("");
   document.querySelectorAll("#dispList [data-del]").forEach(b=>b.onclick=()=>{store.disputes.splice(+b.dataset.del,1);save();renderDisp();});
