@@ -20,7 +20,7 @@ const UNITS = {
   crossbowman: ["弩兵", "XBOW"], ghulam: ["古拉姆", "HMI"], handcannoneer: ["火槍兵", "GUN"],
   horseman: ["騎手", "LMC"], lancer: ["長矛騎兵", "HMC"], spearman: ["長槍兵", "SPEAR"],
   "bedouin-skirmisher": ["貝都因擲矛手", "ARCHER"], "bedouin-swordsman": ["貝都因劍士", "LMI"],
-  "camel-lancer": ["駱駝長矛騎兵", "HMC"], arbaletrier: ["弓弩手", "XBOW"], cataphract: ["拜占庭聖騎兵", "HMC"], "horse-archer": ["弓騎兵", "HA"], "javelin-thrower": ["標槍投擲者", "ARCHER"],
+  "camel-lancer": ["駱駝長矛騎兵", "HMC"], arbaletrier: ["弓弩手", "XBOW"], cataphract: ["拜占庭聖騎兵", "HMC"], "horse-archer": ["騎馬弓兵", "HA"], "javelin-thrower": ["標槍投擲者", "ARCHER"],
   keshik: ["怯薛", "HMC"], landsknecht: ["國土傭僕", "LMI"], limitanei: ["邊防軍", "SPEAR"],
   longbowman: ["長弓兵", "ARCHER"], mangudai: ["蒙古突騎", "HA"], "musofadi-warrior": ["穆索法迪戰士", "LMI"],
   "royal-knight": ["皇家騎士", "HMC"], sipahi: ["采邑騎兵", "LMC"], streltsy: ["射手衛隊", "GUN"],

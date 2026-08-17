@@ -151,7 +151,7 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
 </script>
 <script>
 (function(){
-const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"輕騎兵",HMC:"重騎兵",HA:"騎射手"};
+const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"輕騎兵",HMC:"重騎兵",HA:"馬弓"};
 const CLS_ZH = {cavalry:"騎兵",infantry:"步兵",light:"輕型",heavy:"重型",ranged:"遠程",melee:"近戰",gunpowder:"火藥",elephant:"象",war:"戰",camel:"駱駝",spearman:"長槍兵",crossbowman:"弩兵",archer:"弓兵",horse:"馬",knight:"騎士",armored:"裝甲"};
 const AGE = ["","黑暗","封建","城堡","帝王"];
 
@@ -165,29 +165,29 @@ set("SPEAR","HMC",1,"長槍兵對騎兵有加成傷害。");
 set("SPEAR","HMI",-1,"重裝步兵護甲高、攻擊強，長槍兵沒有對步兵的加成，打不動。");
 set("SPEAR","ARCHER",-1,"弓兵對輕型近戰步兵有加成，且長槍兵追不到弓兵。");
 set("SPEAR","GUN",-1,"火槍傷害極高，輕型步兵血少沒護甲，靠近前就被打死。");
-set("SPEAR","HA",-1,"騎射手邊打邊退（風箏），長槍兵追不上、打不到。");
+set("SPEAR","HA",-1,"馬弓邊打邊退（風箏），長槍兵追不上、打不到。");
 set("LMI","HMI",-1,"重裝步兵護甲高，輕型近戰步兵打不動。");
 set("LMI","ARCHER",-1,"弓兵對輕型近戰步兵有加成傷害。");
 set("LMI","GUN",-1,"火槍傷害極高，輕型步兵血少沒護甲。");
 set("LMI","LMC",1,"輕騎兵近戰能力弱，被近戰步兵纏上會輸。");
 set("LMI","HMC",-1,"重騎兵護甲、傷害都高，輕型步兵又沒有反騎加成。");
-set("LMI","HA",-1,"騎射手風箏，近戰步兵追不上。");
+set("LMI","HA",-1,"馬弓風箏，近戰步兵追不上。");
 set("HMI","ARCHER",1,"重裝步兵遠程護甲高，弓箭傷害幾乎被吸收。");
 set("HMI","XBOW",-1,"弩兵對重型單位有加成傷害。");
 set("HMI","GUN",-1,"火槍傷害極高，護甲吸收不了。");
 set("HMI","LMC",1,"輕騎兵近戰弱，重裝步兵護甲高、傷害穩。");
 set("HMI","HMC",-1,"重騎兵機動與傷害壓過重裝步兵（遊戲說明：重裝步兵被騎士／槍騎兵克制）。");
-set("HMI","HA",-1,"騎射手風箏，重裝步兵又慢，永遠追不上。");
+set("HMI","HA",-1,"馬弓風箏，重裝步兵又慢，永遠追不上。");
 set("ARCHER","LMC",-1,"輕騎兵速度快、對遠程單位有加成。");
 set("ARCHER","HMC",-1,"重騎兵衝進弓兵陣，弓箭傷害被護甲吸收。");
-set("ARCHER","HA",1,"騎射手血少、遠程護甲低，被步弓集火會輸（遊戲說明：騎射手弱於遠程單位）。");
+set("ARCHER","HA",1,"馬弓血少、遠程護甲低，被步弓集火會輸（遊戲說明：馬弓弱於遠程單位）。");
 set("XBOW","LMC",-1,"輕騎兵對遠程單位有加成，弩兵射速慢又脆。");
 set("XBOW","HMC",1,"弩兵對重型單位有加成傷害。");
-set("XBOW","HA",1,"騎射手血少、遠程護甲低，弱於遠程單位。");
+set("XBOW","HA",1,"馬弓血少、遠程護甲低，弱於遠程單位。");
 set("GUN","LMC",-1,"輕騎兵對遠程單位有加成，火槍射速慢，被貼身就輸。");
-set("GUN","HA",1,"騎射手血少，火槍一發傷害極高。");
+set("GUN","HA",1,"馬弓血少，火槍一發傷害極高。");
 set("LMC","HMC",-1,"重騎兵護甲與傷害全面壓過輕騎兵。");
-set("LMC","HA",1,"輕騎兵對遠程單位有加成，速度又追得上騎射手。");
+set("LMC","HA",1,"輕騎兵對遠程單位有加成，速度又追得上馬弓。");
 // unknown pairs (skipped): SPEAR-LMI, SPEAR-XBOW, LMI-XBOW, ARCHER-XBOW, ARCHER-GUN, XBOW-GUN, GUN-HMC, HMC-HA
 
 // unit-specific mechanics exceptions (equal-cost group fight); take precedence over everything but user overrides
@@ -214,8 +214,8 @@ function userOverride(L,R){
 }
 // override rules take precedence over bonus damage
 function override(x,y){
-  if(x.arch==="HA" && (y.arch==="SPEAR"||y.arch==="LMI"||y.arch==="HMI")) return {v:1,r:"騎射手邊打邊退（風箏），近戰步兵追不上；就算對方對騎兵有加成也打不到。"};
-  if(y.arch==="HA" && (x.arch==="SPEAR"||x.arch==="LMI"||x.arch==="HMI")) return {v:-1,r:"騎射手邊打邊退（風箏），近戰步兵追不上；就算對方對騎兵有加成也打不到。"};
+  if(x.arch==="HA" && (y.arch==="SPEAR"||y.arch==="LMI"||y.arch==="HMI")) return {v:1,r:"馬弓邊打邊退（風箏），近戰步兵追不上；就算對方對騎兵有加成也打不到。"};
+  if(y.arch==="HA" && (x.arch==="SPEAR"||x.arch==="LMI"||x.arch==="HMI")) return {v:-1,r:"馬弓邊打邊退（風箏），近戰步兵追不上；就算對方對騎兵有加成也打不到。"};
   return null;
 }
 function bonusOf(av,bv){ // best bonus of variant av vs variant bv
