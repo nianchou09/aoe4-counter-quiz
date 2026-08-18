@@ -28,6 +28,11 @@ main{display:flex;flex-direction:column;align-items:center;padding:14px;width:10
 .center{text-align:center}
 .big{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1408;border:1px solid #f4dc98;border-radius:6px;box-shadow:0 2px 0 #7a5a1c;padding:14px 26px;font-size:18px;font-weight:700;margin:8px}
 .sec{background:var(--panel2);color:var(--text);border:1px solid var(--goldline);border-radius:6px;padding:12px 22px;font-size:16px;margin:8px}
+.civsel{display:flex;gap:10px;align-items:center;justify-content:center;margin:10px 0 4px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.civsel select{background:var(--panel2);color:var(--text);border:1px solid var(--goldline);border-radius:5px;padding:5px 8px;font:inherit;font-size:14px;max-width:170px}
+.civsel #btnSwap{width:34px;font-size:16px}
+.civinfo{margin:2px auto 8px;font-size:12px;min-height:16px}
+.civinfo.warn{color:var(--red)}
 .home{width:240px;padding:14px 0;font-size:18px;font-weight:700;vertical-align:middle;box-sizing:border-box}
 .hint{color:var(--muted);font-size:14px;line-height:1.7;max-width:640px;margin:14px auto}
 /* quiz */
@@ -98,6 +103,8 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
   <!-- START -->
   <section class="screen active center" id="scrStart">
     <p class="hint"><b>點會贏的那一邊</b>，沒有明顯相剋就按「無明顯相剋」。</p>
+    <div class="civsel"><label>左邊 <select id="selL"></select></label><button class="lnk" id="btnSwap" title="左右交換">⇄</button><label>右邊 <select id="selR"></select></label></div>
+    <div class="hint civinfo" id="civInfo"></div>
     <button class="big home" id="btnTimed">⏱ 20 題計時</button>
     <button class="sec home" id="btnPractice">練習模式（不計時）</button>
     <div id="best" class="hint"></div>
@@ -282,29 +289,32 @@ function save(){ try{localStorage.setItem(LS,JSON.stringify(store));}catch(e){} 
 store.log=store.log||[]; store.bestT=store.bestT||{basic:null,adv:null}; // 最佳成績 {acc:正確率%, t:秒}；先比正確率，再比時間
 for(const k of ["basic","adv"]) if(typeof store.bestT[k]==="number") store.bestT[k]=null; // 舊格式（純秒數）作廢
 let adv=!!store.adv, showStats=store.showStats!==false, crossAge=false; // 一律同時代對比
+let civL=store.civL||"", civR=store.civR||"";
+if(!DATA.civs[civL]) civL=""; if(!DATA.civs[civR]) civR="";
 store.overrides=store.overrides||{}; store.disputes=store.disputes||[];
 
 const $=id=>document.getElementById(id);
 function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); document.querySelector(".app").classList.toggle("in-quiz", id==="scrQuiz"); $("btnStatsPage").textContent=id==="scrStats"?"回首頁":"統計"; window.scrollTo(0,0); }
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
 
-function pool(){ return DATA.units.filter(u=>adv?true:u.basic); }
-function pickSide(u){ const v=rnd(u.vars); return {u,v}; }
+function pool(civ){ return DATA.units.filter(u=>(adv?true:u.basic) && (!civ || u.vars.some(v=>v.c===civ))); }
+function varsOf(u,civ){ return civ ? u.vars.filter(v=>v.c===civ) : u.vars; }
+function pickSide(u,civ){ return {u, v:rnd(varsOf(u,civ))}; }
 let seenPairs=new Set(), recentU=[];
 function makeQ(){
-  const P=pool();
+  const PL=pool(civL), PR=pool(civR);
+  if(!PL.length||!PR.length) return null;
   // 30%: replay a matchup previously answered wrong (same unit ids)
-  const wrong = mode==="practice" ? store.log.filter(x=>!x.ok && P.find(u=>u.id===x.l) && P.find(u=>u.id===x.r)) : [];
-  const win = Math.min(10, Math.max(2, Math.floor(P.length/2)-1)); // 最近用過的單位盡量不重複
+  const wrong = mode==="practice" ? store.log.filter(x=>!x.ok && PL.find(u=>u.id===x.l) && PR.find(u=>u.id===x.r)) : [];
+  const win = Math.min(10, Math.max(2, Math.floor(Math.min(PL.length,PR.length)/2)-1)); // 最近用過的單位盡量不重複
   for(let t=0;t<200;t++){
     let ul,ur;
-    if(wrong.length && Math.random()<0.3){ const w=rnd(wrong); ul=P.find(u=>u.id===w.l); ur=P.find(u=>u.id===w.r); if(Math.random()<.5)[ul,ur]=[ur,ul]; }
-    else { ul=rnd(P); ur=rnd(P); }
+    if(wrong.length && Math.random()<0.3){ const w=rnd(wrong); ul=PL.find(u=>u.id===w.l); ur=PR.find(u=>u.id===w.r); if(!ul||!ur) continue; }
+    else { ul=rnd(PL); ur=rnd(PR); }
     if(t<120 && (recentU.includes(ul.id)||recentU.includes(ur.id))) continue;
-    const L=pickSide(ul);
-    let R;
-    if(crossAge) R=pickSide(ur);
-    else { const same=ur.vars.filter(v=>v.a===L.v.a); if(!same.length) continue; R={u:ur,v:rnd(same)}; }
+    const L=pickSide(ul,civL);
+    const same=varsOf(ur,civR).filter(v=>v.a===L.v.a); if(!same.length) continue;
+    const R={u:ur,v:rnd(same)};
     if(L.u.id===R.u.id && L.v.c===R.v.c) continue; // 同文明同兵種不出
     const vd=verdict(L,R);
     if(!vd) continue;
@@ -349,6 +359,8 @@ function nextQ(){
 }
 function fmtT(s){ return s.toFixed(1)+" 秒"; }
 function fmtBest(b){ return b==null?"—":`${b.acc}%／${fmtT(b.t)}`; }
+function bestKey(){ const base=adv?"adv":"basic"; return (civL||civR) ? base+"|"+(civL||"*")+"|"+(civR||"*") : base; }
+function civLabel(){ return (civL||civR) ? (civL?DATA.civs[civL][1]:"隨機")+" vs "+(civR?DATA.civs[civR][1]:"隨機") : ""; }
 function answer(choice){ // 1 left, -1 right, 0 tie
   if(answered) return; answered=true;
   const ok=choice===q.vd.v; count++; if(ok) score++;
@@ -371,13 +383,13 @@ function resumeTimer(){
 function drawTimer(){ $("timerBar").style.width=(Math.min(count,NQ)/NQ*100)+"%"; $("qTime").textContent=fmtT(elapsed); }
 function start(m){
   mode=m; score=0; count=0; wrongs=[]; elapsed=0; pauseTimer(); seenPairs=new Set(); recentU=[];
-  $("qMode").textContent=(m==="timed"?NQ+" 題計時":"練習模式")+(adv?" · 進階":" · 初階");
+  $("qMode").textContent=(m==="timed"?NQ+" 題計時":"練習模式")+(adv?" · 進階":" · 初階")+(civLabel()?" · "+civLabel():"");
   $("timerWrap").style.display=m==="timed"?"":"none"; $("qTime").textContent=m==="timed"?"":"∞";
   if(m==="timed") drawTimer(); show("scrQuiz"); nextQ();
 }
 function endGame(){
   pauseTimer(); answered=true;
-  const key=adv?"adv":"basic";
+  const key=bestKey();
   let rec="";
   let title;
   if(mode==="timed" && count>=NQ){
@@ -420,7 +432,7 @@ function statsTable(rows,title){
 const unitById=id=>DATA.units.find(u=>u.id===id);
 function renderStats(tab){
   const n=store.log.length, w=store.log.filter(x=>!x.ok).length;
-  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。最佳成績：初階 ${fmtBest(store.bestT.basic)}、進階 ${fmtBest(store.bestT.adv)}`:"還沒有紀錄，先玩幾題吧。";
+  $("statsSummary").textContent=n?`共答 ${n} 題，答錯 ${w} 題（${(w/n*100).toFixed(0)}%）。目前選擇的最佳成績：${fmtBest(store.bestT[bestKey()])}`:"還沒有紀錄，先玩幾題吧。";
   let html="";
   if(tab==="arch") html=statsTable(agg(x=>[x.al,x.ar],k=>ARCH[k]||k),"兵種類型（出現在任一邊）");
   else if(tab==="pair") html=statsTable(agg(x=>[[x.al,x.ar].sort().join("|")],k=>k.split("|").map(a=>ARCH[a]||a).join(" vs ")).filter(r=>r.n>=2),"對戰組合（至少 2 題）");
@@ -431,8 +443,34 @@ function renderStats(tab){
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");renderStats(b.dataset.t);});
 
 // ---------- wiring ----------
-function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳成績（${NQ} 題）：初階 ${fmtBest(store.bestT.basic)} · 進階 ${fmtBest(store.bestT.adv)}`; }
-$("tgAdv").onclick=()=>{adv=!adv;store.adv=adv;save();syncToggles(); if($("scrQuiz").classList.contains("active")&&answered===false){} };
+function comboCount(){
+  if(!civL && !civR) return -1; // 隨機：不必計算
+  const PL=pool(civL), PR=pool(civR); const seen=new Set();
+  for(const A of PL) for(const av of varsOf(A,civL)) for(const B of PR) for(const bv of varsOf(B,civR)){
+    if(av.a!==bv.a) continue;
+    if(A.id===B.id && av.c===bv.c) continue;
+    const k=A.id+"|"+B.id; if(seen.has(k)) continue;
+    if(verdict({u:A,v:av},{u:B,v:bv})) seen.add(k);
+  }
+  return seen.size;
+}
+function fillCivSelects(){
+  const opts='<option value="">隨機</option>'+Object.entries(DATA.civs).sort((a,b)=>a[1][1].localeCompare(b[1][1],"zh-Hant")).map(([k,v])=>`<option value="${k}">${v[1]}</option>`).join("");
+  $("selL").innerHTML=opts; $("selR").innerHTML=opts; $("selL").value=civL; $("selR").value=civR;
+}
+function syncCiv(){
+  $("selL").value=civL; $("selR").value=civR;
+  store.civL=civL; store.civR=civR; save();
+  const n=comboCount(); const info=$("civInfo");
+  if(n<0){ info.textContent=""; info.classList.remove("warn"); $("btnTimed").disabled=$("btnPractice").disabled=false; }
+  else if(n===0){ info.textContent="這個組合沒有可出的題目，換個文明或開啟進階吧"; info.classList.add("warn"); $("btnTimed").disabled=$("btnPractice").disabled=true; }
+  else { info.textContent="可出題組合 "+n+" 組"+(n<12?"（偏少，題目會重複）":""); info.classList.toggle("warn",n<12); $("btnTimed").disabled=$("btnPractice").disabled=false; }
+}
+function syncToggles(){ $("tgAdv").classList.toggle("on",adv);  $("tgStats").classList.toggle("on",showStats); $("best").textContent=`最佳成績（${NQ} 題${civLabel()?"・"+civLabel():""}${adv?"・進階":"・初階"}）：${fmtBest(store.bestT[bestKey()])}`; }
+$("tgAdv").onclick=()=>{adv=!adv;store.adv=adv;save();syncToggles();syncCiv(); if($("scrQuiz").classList.contains("active")&&answered===false){} };
+$("selL").onchange=()=>{ civL=$("selL").value; if(civL&&!adv){adv=true;store.adv=true;} syncToggles(); syncCiv(); };
+$("selR").onchange=()=>{ civR=$("selR").value; if(civR&&!adv){adv=true;store.adv=true;} syncToggles(); syncCiv(); };
+$("btnSwap").onclick=()=>{ [civL,civR]=[civR,civL]; syncToggles(); syncCiv(); };
 $("tgStats").onclick=()=>{showStats=!showStats;store.showStats=showStats;save();syncToggles();document.querySelectorAll(".stats").forEach(s=>s.classList.toggle("hidden",!showStats));};
 $("btnStatsPage").onclick=()=>{ if($("scrStats").classList.contains("active")){ syncToggles(); show("scrStart"); return; } pauseTimer(); renderStats(document.querySelector(".tabs button.on").dataset.t); renderDisp(); $("exportBox").style.display="none"; show("scrStats"); };
 $("btnTimed").onclick=()=>start("timed");
@@ -440,7 +478,7 @@ $("btnPractice").onclick=()=>start("practice");
 $("cardL").onclick=()=>answer(1); $("cardR").onclick=()=>answer(-1); $("btnTie").onclick=()=>answer(0);
 $("btnQuit").onclick=()=>endGame();
 $("btnAgain").onclick=()=>start(mode);
-$("btnHome").onclick=$("btnHome2").onclick=()=>{syncToggles();show("scrStart");};
+$("btnHome").onclick=$("btnHome2").onclick=()=>{syncToggles();syncCiv();show("scrStart");};
 function unitZh(id){const u=DATA.units.find(x=>x.id===id);return u?u.zh:id;}
 function renderDisp(){
   const n=store.disputes.length; $("dispSummary").textContent=n?`共 ${n} 筆回報（只存在這台裝置，不影響出題判定）。想讓判定被修正，請按下面的按鈕匯出文字，回報給作者。`:"還沒有回報。在結算頁的錯題卡片下方可以記下你認為的正解。";
@@ -454,9 +492,9 @@ $("btnExport").onclick=()=>{
   try{navigator.clipboard.writeText(box.value);}catch(e){}
 };
 $("btnClearOv").onclick=()=>{ if(confirm("清除所有回報紀錄？")){store.disputes=[];save();renderDisp();} };
-$("btnReset").onclick=()=>{ if(confirm("清除所有答題紀錄與最佳成績？")){store={log:[],bestT:{basic:null,adv:null},adv,showStats,overrides:store.overrides,disputes:store.disputes};save();renderStats("arch");syncToggles();} };
+$("btnReset").onclick=()=>{ if(confirm("清除所有答題紀錄與最佳成績？")){store={log:[],bestT:{},adv,showStats,civL,civR,overrides:store.overrides,disputes:store.disputes};save();renderStats("arch");syncToggles();} };
 document.addEventListener("keydown",e=>{ if(!$("scrQuiz").classList.contains("active"))return; if(e.key==="ArrowLeft")answer(1); else if(e.key==="ArrowRight")answer(-1); else if(e.key==="ArrowDown"||e.key===" "){e.preventDefault();answer(0);} });
-syncToggles();
+fillCivSelects(); syncToggles(); syncCiv();
 })();
 </script>
 </body>
