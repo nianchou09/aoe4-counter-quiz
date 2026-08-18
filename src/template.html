@@ -266,17 +266,19 @@ function verdict(L,R){
   if(m.v===0){
     // 同類型：先看戰鬥數值本身有沒有差距，再看同成本下的戰力
     const cost=v=>v.cost.f+v.cost.w+v.cost.g+v.cost.s+(v.cost.o||0)+(v.cost.sv||0);
-    const RAW=v=>v.hp*(v.w.d*(v.w.b||1)/v.w.s)*(1+(v.ma+v.ra)/20);
+    // 實際每下傷害要扣掉對方「對應類型」的護甲：近戰攻擊看近防、遠程攻擊看遠防
+    const hit=(atk,def)=>Math.max(1, atk.w.d-(atk.w.t==="melee"?def.ma:def.ra));
+    const dps=(atk,def)=>hit(atk,def)*(atk.w.b||1)/atk.w.s;
     const useCost = cost(L.v)>0 && cost(R.v)>0; // 免費單位只比數值
-    const P=v=>RAW(v)/(useCost?Math.pow(cost(v),1.5):1);
-    const pL=P(L.v), pR=P(R.v), ratio=Math.max(pL,pR)/Math.min(pL,pR);
-    const stat=S=>`血量 ${S.v.hp}／攻擊 ${S.v.w.d}${(S.v.w.b||1)>1?"×"+S.v.w.b:""}／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
+    const P=(me,foe)=>me.hp*dps(me,foe)/(useCost?Math.pow(cost(me),1.5):1);
+    const pL=P(L.v,R.v), pR=P(R.v,L.v), ratio=Math.max(pL,pR)/Math.min(pL,pR);
+    const stat=(S,F)=>`血量 ${S.v.hp}／實際每下 ${hit(S.v,F.v)}${(S.v.w.b||1)>1?"×"+S.v.w.b:""}（每 ${S.v.w.s}s）／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
     if(ratio>=1.25){
       const [hi,lo]=pL>pR?[L,R]:[R,L];
       const cheaper = cost(hi.v)<cost(lo.v) ? `（同成本下${hi.u.zh}可以多出幾隻）` : "";
-      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高${cheaper}：${hi.u.zh} ${stat(hi)}；${lo.u.zh} ${stat(lo)}。`};
+      return {v:pL>pR?1:-1, r:`同類型單位，同成本下${hi.u.zh}戰力明顯較高${cheaper}：${hi.u.zh} ${stat(hi,lo)}；${lo.u.zh} ${stat(lo,hi)}。`};
     }
-    return {v:0, r:`同類型單位，同成本下戰力相近：${L.u.zh} ${stat(L)}；${R.u.zh} ${stat(R)}。沒有明顯相剋，勝負看操作與升級。`};
+    return {v:0, r:`同類型單位，同成本下戰力相近：${L.u.zh} ${stat(L,R)}；${R.u.zh} ${stat(R,L)}。沒有明顯相剋，勝負看操作與升級。`};
   }
   return {v:m.v,r:m.r};
 }
