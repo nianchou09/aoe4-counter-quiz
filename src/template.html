@@ -158,8 +158,8 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
 </script>
 <script>
 (function(){
-const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"輕騎兵",HMC:"重騎兵",HA:"馬弓",ELE:"戰象"};
-const CLS_ZH = {cavalry:"騎兵",infantry:"步兵",light:"輕型",heavy:"重型",ranged:"遠程",melee:"近戰",gunpowder:"火藥",elephant:"象",war:"戰",camel:"駱駝",spearman:"長槍兵",crossbowman:"弩兵",archer:"弓兵",horse:"馬",knight:"騎士",armored:"裝甲"};
+const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"肉馬",HMC:"金馬",HA:"馬弓",ELE:"戰象"};
+const CLS_ZH = {cavalry:"騎兵",infantry:"步兵",light:"輕型",heavy:"重甲",ranged:"遠程",melee:"近戰",gunpowder:"火藥",elephant:"象",war:"戰",camel:"駱駝",spearman:"長槍兵",crossbowman:"弩兵",archer:"弓兵",horse:"馬",knight:"騎士",armored:"裝甲"};
 const AGE = ["","黑暗","封建","城堡","帝王"];
 
 // matrix[X][Y] = 1 X wins, -1 Y wins, 0 tie, undefined unknown (skip)
@@ -176,41 +176,41 @@ set("SPEAR","HA",-1,"馬弓邊打邊退（風箏），長槍兵追不上、打�
 set("LMI","HMI",-1,"重裝步兵護甲高，輕型近戰步兵打不動。");
 set("LMI","ARCHER",-1,"弓兵對輕型近戰步兵有加成傷害。");
 set("LMI","GUN",-1,"火槍傷害極高，輕型步兵血少沒護甲。");
-set("LMI","LMC",1,"輕騎兵近戰能力弱，被近戰步兵纏上會輸。");
-set("LMI","HMC",-1,"重騎兵護甲、傷害都高，輕型步兵又沒有反騎加成。");
+set("LMI","LMC",1,"肉馬近戰能力弱，被近戰步兵纏上會輸。");
+set("LMI","HMC",-1,"金馬護甲、傷害都高，輕型步兵又沒有反騎加成。");
 set("LMI","HA",-1,"馬弓風箏，近戰步兵追不上。");
 set("HMI","ARCHER",1,"重裝步兵遠程護甲高，弓箭傷害幾乎被吸收。");
-set("HMI","XBOW",-1,"弩兵對重型單位有加成傷害。");
+set("HMI","XBOW",-1,"弩兵對重甲單位有加成傷害。");
 set("HMI","GUN",-1,"火槍傷害極高，護甲吸收不了。");
-set("HMI","LMC",1,"輕騎兵近戰弱，重裝步兵護甲高、傷害穩。");
-set("HMI","HMC",-1,"重騎兵機動與傷害壓過重裝步兵（遊戲說明：重裝步兵被騎士／槍騎兵克制）。");
+set("HMI","LMC",1,"肉馬近戰弱，重裝步兵護甲高、傷害穩。");
+set("HMI","HMC",-1,"金馬機動與傷害壓過重裝步兵（遊戲說明：重裝步兵被騎士／槍騎兵克制）。");
 set("HMI","HA",-1,"馬弓風箏，重裝步兵又慢，永遠追不上。");
-set("ARCHER","LMC",-1,"輕騎兵速度快、對遠程單位有加成。");
-set("ARCHER","HMC",-1,"重騎兵衝進弓兵陣，弓箭傷害被護甲吸收。");
+set("ARCHER","LMC",-1,"肉馬速度快、對遠程單位有加成。");
+set("ARCHER","HMC",-1,"金馬衝進弓兵陣，弓箭傷害被護甲吸收。");
 set("ARCHER","HA",1,"馬弓血少、遠程護甲低，被步弓集火會輸（遊戲說明：馬弓弱於遠程單位）。");
-set("XBOW","LMC",-1,"輕騎兵對遠程單位有加成，弩兵射速慢又脆。");
-set("XBOW","HMC",1,"弩兵對重型單位有加成傷害。");
+set("XBOW","LMC",-1,"肉馬對遠程單位有加成，弩兵射速慢又脆。");
+set("XBOW","HMC",1,"弩兵對重甲單位有加成傷害。");
 set("XBOW","HA",1,"馬弓血少、遠程護甲低，弱於遠程單位。");
-set("GUN","LMC",-1,"輕騎兵對遠程單位有加成，火槍射速慢，被貼身就輸。");
+set("GUN","LMC",-1,"肉馬對遠程單位有加成，火槍射速慢，被貼身就輸。");
 set("GUN","HA",1,"馬弓血少，火槍一發傷害極高。");
-set("LMC","HMC",-1,"重騎兵護甲與傷害全面壓過輕騎兵。");
-set("LMC","HA",1,"輕騎兵對遠程單位有加成，速度又追得上馬弓。");
+set("LMC","HMC",-1,"金馬護甲與傷害全面壓過肉馬。");
+set("LMC","HA",1,"肉馬對遠程單位有加成，速度又追得上馬弓。");
 set("ELE","ARCHER",1,"戰象血量與護甲極高，弓箭幾乎打不動。");
 set("ELE","LMI",1,"戰象踩過去就是一片，輕型步兵沒有反象手段。");
 set("ELE","HMI",1,"戰象血量太高、傷害又大，重裝步兵沒有反象加成擋不住。");
-set("ELE","LMC",1,"輕騎兵傷害低，打不穿戰象的血量與護甲。");
+set("ELE","LMC",1,"肉馬傷害低，打不穿戰象的血量與護甲。");
 set("ELE","SPEAR",-1,"長槍兵對戰象有額外加成傷害，是最標準的反象手段。");
-set("ELE","XBOW",-1,"弩兵對重型／大型目標有加成，是遠程反象的標準解。");
+set("ELE","XBOW",-1,"弩兵對重甲／大型目標有加成，是遠程反象的標準解。");
 // unknown pairs (skipped): SPEAR-LMI, SPEAR-XBOW, LMI-XBOW, ARCHER-XBOW, ARCHER-GUN, XBOW-GUN, GUN-HMC, HMC-HA
 
 // unit-specific mechanics exceptions (equal-cost group fight); take precedence over everything but user overrides
 const EXC=[
   {u:["landsknecht","gilded-landsknecht"],vs:["SPEAR","LMI","HMI"],v:1,r:"國土傭僕的雙手大劍有範圍傷害，群戰一刀掃到一片，步兵群扛不住。"},
-  {u:["kanabo-samurai"],vs:["HMC"],v:1,r:"金碎棒武士的攻擊附帶目標最大血量 6% 的加成，對高血量的重騎兵特別有效。"},
+  {u:["kanabo-samurai"],vs:["HMC"],v:1,r:"金碎棒武士的攻擊附帶目標最大血量 6% 的加成，對高血量的金馬特別有效。"},
   {u:["black-rider"],vs:["ARCHER"],v:1,r:"黑騎士是重甲火槍騎兵，弓箭傷害被護甲吸收，還能邊打邊退。"},
   {u:["black-rider"],vs:["GUN"],v:1,r:"黑騎士 225 血、4 遠防、45 攻，三槍打死火槍兵；火槍兵要七槍才打死黑騎士，黑騎士又快得多。"},
   {u:["fire-lancer"],vs:["SPEAR"],v:-1,r:"火長矛騎兵近戰弱，長槍兵對騎兵有加成。"},
-  {u:["war-elephant","tower-elephant","sultans-elite-tower-elephant","ballista-elephant","raider-elephant"],vs:["LMC"],v:1,r:"戰象血量與護甲太高，輕騎兵那點反遠程加成打不穿。"},
+  {u:["war-elephant","tower-elephant","sultans-elite-tower-elephant","ballista-elephant","raider-elephant"],vs:["LMC"],v:1,r:"戰象血量與護甲太高，肉馬那點反遠程加成打不穿。"},
   {u:["javelin-thrower","mansa-javelineer"],vs:["LMI"],v:0,r:"標槍投擲者的加成是對遠程單位，對輕型近戰步兵沒有加成；輕步兵速度不慢，貼上來就能打，互有勝負。"},
 ];
 function exception(L,R){
