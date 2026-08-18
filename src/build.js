@@ -86,7 +86,7 @@ for (const u of j.data) {
       rec.vars.push({
         c, a: ageFix, n: v.name, i: v.icon, hp: v.hitpoints,
         ma: arm.m, ra: arm.r,
-        w: { t: w.type, d: w.damage, s: w.speed, r: w.range ? w.range.max : 0 },
+        w: { t: w.type, d: w.damage, s: w.speed, r: w.range ? w.range.max : 0, b: (w.burst && w.burst.count > 1) ? w.burst.count : 1 },
         sp: v.movement ? v.movement.speed : 0,
         cost: { f: v.costs.food, w: v.costs.wood, g: v.costs.gold, s: v.costs.stone, o: v.costs.oliveoil || 0, sv: v.costs.silver || 0 },
         cls: v.classes.filter(x => !/^(annihilation_condition|find_non_siege_land_military|formational|human|included_by_military_hotkeys|land_military|military|torch_thrower)$/.test(x)),

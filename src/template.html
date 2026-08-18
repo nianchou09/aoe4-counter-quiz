@@ -231,6 +231,7 @@ function bonusOf(av,bv){ // best bonus of variant av vs variant bv
   return best;
 }
 function clsZh(g){ return g.map(c=>CLS_ZH[c]||c).join(""); }
+function atkText(v){ const b=v.w.b||1; return (b>1? v.w.d+"×"+b : v.w.d)+"（"+(v.w.t==="melee"?"近戰":"遠程")+"，每 "+v.w.s+"s"+(b>1?"，連射 "+b+" 發":"")+"）"; }
 function costTotal(v){ return v.cost.f+v.cost.w+v.cost.g+v.cost.s+(v.cost.o||0)+(v.cost.sv||0); }
 function costText(v){ return [v.cost.f?"食"+v.cost.f:"",v.cost.w?"木"+v.cost.w:"",v.cost.g?"金"+v.cost.g:"",v.cost.s?"石"+v.cost.s:"",v.cost.o?"橄欖油"+v.cost.o:"",v.cost.sv?"白銀"+v.cost.sv:""].filter(Boolean).join(" ")||"免費"; }
 // returns {v:1 left wins,-1 right wins,0 tie, r:reason} or null
@@ -251,11 +252,11 @@ function verdict(L,R){
   if(m.v===0){
     // 同類型：先看戰鬥數值本身有沒有差距，再看同成本下的戰力
     const cost=v=>v.cost.f+v.cost.w+v.cost.g+v.cost.s+(v.cost.o||0)+(v.cost.sv||0);
-    const RAW=v=>v.hp*(v.w.d/v.w.s)*(1+(v.ma+v.ra)/20);
+    const RAW=v=>v.hp*(v.w.d*(v.w.b||1)/v.w.s)*(1+(v.ma+v.ra)/20);
     const useCost = cost(L.v)>0 && cost(R.v)>0; // 免費單位只比數值
     const P=v=>RAW(v)/(useCost?Math.pow(cost(v),1.5):1);
     const pL=P(L.v), pR=P(R.v), ratio=Math.max(pL,pR)/Math.min(pL,pR);
-    const stat=S=>`血量 ${S.v.hp}／攻擊 ${S.v.w.d}／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
+    const stat=S=>`血量 ${S.v.hp}／攻擊 ${S.v.w.d}${(S.v.w.b||1)>1?"×"+S.v.w.b:""}／護甲 ${S.v.ma}+${S.v.ra}／成本 ${cost(S.v)||"免費"}`;
     if(ratio>=1.25){
       const [hi,lo]=pL>pR?[L,R]:[R,L];
       const cheaper = cost(hi.v)<cost(lo.v) ? `（同成本下${hi.u.zh}可以多出幾隻）` : "";
@@ -320,7 +321,7 @@ function renderCard(el,S){
   <div class="stats ${showStats?"":"hidden"}">
     <span>血量</span><span>${v.hp}</span>
     <span>護甲</span><span>近 ${v.ma} / 遠 ${v.ra}</span>
-    <span>攻擊</span><span>${w.d}（${w.t==="melee"?"近戰":"遠程"}，每 ${w.s}s）</span>
+    <span>攻擊</span><span>${atkText(v)}</span>
     <span>射程</span><span>${w.r>1?w.r:"近戰"}</span>
     <span>移速</span><span>${v.sp}</span>
     <span>成本</span><span>${[v.cost.f?"食"+v.cost.f:"",v.cost.w?"木"+v.cost.w:"",v.cost.g?"金"+v.cost.g:"",v.cost.o?"橄欖油"+v.cost.o:"",v.cost.sv?"白銀"+v.cost.sv:""].filter(Boolean).join(" ")||"免費"}</span>
@@ -377,7 +378,7 @@ function endGame(){
   } else title=(mode==="timed"?"提前結束":"練習結束")+`　答對 ${score} / ${count}`;
   $("resTitle").innerHTML=title;
   const side=(S,win)=>`<div class="wside ${win?"wwin":""}"><img src="${DATA.icons[S.v.i]||""}" alt=""><div class="wciv">${DATA.civs[S.v.c][1]}</div><div class="wname">${S.u.zh}</div><div class="wmeta">${AGE[S.v.a]}時代・${ARCH[S.u.arch]}</div>
-    <div class="wstats"><span>血量</span><span>${S.v.hp}</span><span>護甲</span><span>近 ${S.v.ma} / 遠 ${S.v.ra}</span><span>攻擊</span><span>${S.v.w.d}（${S.v.w.t==="melee"?"近戰":"遠程"}，每 ${S.v.w.s}s）</span><span>射程</span><span>${S.v.w.r>1?S.v.w.r:"近戰"}</span><span>移速</span><span>${S.v.sp}</span><span>加成</span><span>${S.v.mods.length?S.v.mods.map(m=>m.c.map(g=>clsZh(g)+" +"+m.v).join("／")).join("、"):"無"}</span><span>成本</span><span>${costText(S.v)}${costTotal(S.v)?"（共 "+costTotal(S.v)+"）":""}</span></div></div>`;
+    <div class="wstats"><span>血量</span><span>${S.v.hp}</span><span>護甲</span><span>近 ${S.v.ma} / 遠 ${S.v.ra}</span><span>攻擊</span><span>${atkText(S.v)}</span><span>射程</span><span>${S.v.w.r>1?S.v.w.r:"近戰"}</span><span>移速</span><span>${S.v.sp}</span><span>加成</span><span>${S.v.mods.length?S.v.mods.map(m=>m.c.map(g=>clsZh(g)+" +"+m.v).join("／")).join("、"):"無"}</span><span>成本</span><span>${costText(S.v)}${costTotal(S.v)?"（共 "+costTotal(S.v)+"）":""}</span></div></div>`;
   $("wrongList").innerHTML=wrongs.length?wrongs.map(({q},i)=>{
     const w=q.vd.v===0?"無明顯相剋":(q.vd.v===1?"左邊 "+q.L.u.zh:"右邊 "+q.R.u.zh);
     return `<div class="wrong" data-i="${i}"><div class="wrow">${side(q.L,q.vd.v===1)}<div class="wvs ${q.vd.v===0?"wwin":""}">${q.vd.v===0?"無明顯相剋":"vs"}</div>${side(q.R,q.vd.v===-1)}</div><div class="wans">正解：${w}</div><div class="wreason">${q.vd.r}</div>
