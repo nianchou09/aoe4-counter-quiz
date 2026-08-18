@@ -201,5 +201,8 @@
  "raider-elephant|tug": "AOE4_TUGH_RAIDER_ELE.png",
  "imperial-guard|zx": "AOE4_ZXL_IMPERIAL_GUARD.png",
  "mansa-javelineer|ma": "Mali_Javelin_Throwers.png",
- "mansa-musofadi-warrior|ma": "MALI_MUSOFADI_WARRIOR.png"
+ "mansa-musofadi-warrior|ma": "MALI_MUSOFADI_WARRIOR.png",
+ "tower-elephant|de": "Tower_War_Elephant.png",
+ "sultans-elite-tower-elephant|de": "Tower_Elephant_types.png",
+ "ballista-elephant|tug": "AOE4_TUGH_BALLISTA_ELE.png"
 }

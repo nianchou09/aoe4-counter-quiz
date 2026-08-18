@@ -151,7 +151,7 @@ footer{color:#5f6b76;font-size:11px;text-align:center;padding:10px;border-top:1p
 </script>
 <script>
 (function(){
-const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"輕騎兵",HMC:"重騎兵",HA:"馬弓"};
+const ARCH = {SPEAR:"長槍兵(反騎)",LMI:"輕型近戰步兵",HMI:"重裝步兵",ARCHER:"弓兵",XBOW:"弩兵(反重甲)",GUN:"火槍步兵",LMC:"輕騎兵",HMC:"重騎兵",HA:"馬弓",ELE:"戰象"};
 const CLS_ZH = {cavalry:"騎兵",infantry:"步兵",light:"輕型",heavy:"重型",ranged:"遠程",melee:"近戰",gunpowder:"火藥",elephant:"象",war:"戰",camel:"駱駝",spearman:"長槍兵",crossbowman:"弩兵",archer:"弓兵",horse:"馬",knight:"騎士",armored:"裝甲"};
 const AGE = ["","黑暗","封建","城堡","帝王"];
 
@@ -188,6 +188,12 @@ set("GUN","LMC",-1,"輕騎兵對遠程單位有加成，火槍射速慢，被貼
 set("GUN","HA",1,"馬弓血少，火槍一發傷害極高。");
 set("LMC","HMC",-1,"重騎兵護甲與傷害全面壓過輕騎兵。");
 set("LMC","HA",1,"輕騎兵對遠程單位有加成，速度又追得上馬弓。");
+set("ELE","ARCHER",1,"戰象血量與護甲極高，弓箭幾乎打不動。");
+set("ELE","LMI",1,"戰象踩過去就是一片，輕型步兵沒有反象手段。");
+set("ELE","HMI",1,"戰象血量太高、傷害又大，重裝步兵沒有反象加成擋不住。");
+set("ELE","LMC",1,"輕騎兵傷害低，打不穿戰象的血量與護甲。");
+set("ELE","SPEAR",-1,"長槍兵對戰象有額外加成傷害，是最標準的反象手段。");
+set("ELE","XBOW",-1,"弩兵對重型／大型目標有加成，是遠程反象的標準解。");
 // unknown pairs (skipped): SPEAR-LMI, SPEAR-XBOW, LMI-XBOW, ARCHER-XBOW, ARCHER-GUN, XBOW-GUN, GUN-HMC, HMC-HA
 
 // unit-specific mechanics exceptions (equal-cost group fight); take precedence over everything but user overrides
@@ -197,6 +203,7 @@ const EXC=[
   {u:["black-rider"],vs:["ARCHER"],v:1,r:"黑騎士是重甲火槍騎兵，弓箭傷害被護甲吸收，還能邊打邊退。"},
   {u:["black-rider"],vs:["GUN"],v:1,r:"黑騎士 225 血、4 遠防、45 攻，三槍打死火槍兵；火槍兵要七槍才打死黑騎士，黑騎士又快得多。"},
   {u:["fire-lancer"],vs:["SPEAR"],v:-1,r:"火長矛騎兵近戰弱，長槍兵對騎兵有加成。"},
+  {u:["war-elephant","tower-elephant","sultans-elite-tower-elephant","ballista-elephant","raider-elephant"],vs:["LMC"],v:1,r:"戰象血量與護甲太高，輕騎兵那點反遠程加成打不穿。"},
   {u:["javelin-thrower","mansa-javelineer"],vs:["LMI"],v:0,r:"標槍投擲者的加成是對遠程單位，對輕型近戰步兵沒有加成；輕步兵速度不慢，貼上來就能打，互有勝負。"},
 ];
 function exception(L,R){
@@ -283,15 +290,17 @@ function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
 
 function pool(){ return DATA.units.filter(u=>adv?true:u.basic); }
 function pickSide(u){ const v=rnd(u.vars); return {u,v}; }
-let seenPairs=new Set();
+let seenPairs=new Set(), recentU=[];
 function makeQ(){
   const P=pool();
   // 30%: replay a matchup previously answered wrong (same unit ids)
-  const wrong=store.log.filter(x=>!x.ok && P.find(u=>u.id===x.l) && P.find(u=>u.id===x.r));
+  const wrong = mode==="practice" ? store.log.filter(x=>!x.ok && P.find(u=>u.id===x.l) && P.find(u=>u.id===x.r)) : [];
+  const win = Math.min(10, Math.max(2, Math.floor(P.length/2)-1)); // 最近用過的單位盡量不重複
   for(let t=0;t<200;t++){
     let ul,ur;
     if(wrong.length && Math.random()<0.3){ const w=rnd(wrong); ul=P.find(u=>u.id===w.l); ur=P.find(u=>u.id===w.r); if(Math.random()<.5)[ul,ur]=[ur,ul]; }
     else { ul=rnd(P); ur=rnd(P); }
+    if(t<120 && (recentU.includes(ul.id)||recentU.includes(ur.id))) continue;
     const L=pickSide(ul);
     let R;
     if(crossAge) R=pickSide(ur);
@@ -302,6 +311,7 @@ function makeQ(){
     const pk=[ul.id,ur.id].sort().join("|");
     if(seenPairs.has(pk) && t<150) continue;
     seenPairs.add(pk);
+    recentU.push(ul.id,ur.id); if(recentU.length>win) recentU=recentU.slice(-win);
     return {L,R,vd};
   }
   return null;
@@ -360,7 +370,7 @@ function resumeTimer(){
 }
 function drawTimer(){ $("timerBar").style.width=(Math.min(count,NQ)/NQ*100)+"%"; $("qTime").textContent=fmtT(elapsed); }
 function start(m){
-  mode=m; score=0; count=0; wrongs=[]; elapsed=0; pauseTimer(); seenPairs=new Set();
+  mode=m; score=0; count=0; wrongs=[]; elapsed=0; pauseTimer(); seenPairs=new Set(); recentU=[];
   $("qMode").textContent=(m==="timed"?NQ+" 題計時":"練習模式")+(adv?" · 進階":" · 初階");
   $("timerWrap").style.display=m==="timed"?"":"none"; $("qTime").textContent=m==="timed"?"":"∞";
   if(m==="timed") drawTimer(); show("scrQuiz"); nextQ();

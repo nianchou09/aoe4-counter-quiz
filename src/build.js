@@ -14,7 +14,7 @@ const CIVS = {
 };
 
 // id -> [zh name, archetype]
-// archetypes: SPEAR LMI HMI ARCHER XBOW GUN LMC HMC HA
+// archetypes: SPEAR LMI HMI ARCHER XBOW GUN LMC HMC HA ELE
 const UNITS = {
   archer: ["弓兵", "ARCHER"], "camel-archer": ["駱駝射手", "HA"], "camel-rider": ["駱駝騎兵", "LMC"],
   crossbowman: ["弩兵", "XBOW"], ghulam: ["古拉姆", "HMI"], handcannoneer: ["火槍兵", "GUN"],
@@ -24,7 +24,7 @@ const UNITS = {
   keshik: ["怯薛", "HMC"], landsknecht: ["國土傭僕", "LMI"], limitanei: ["邊防軍", "SPEAR"],
   longbowman: ["長弓兵", "ARCHER"], mangudai: ["蒙古突騎", "HA"], "musofadi-warrior": ["穆索法迪戰士", "LMI"],
   "royal-knight": ["皇家騎士", "HMC"], sipahi: ["采邑騎兵", "LMC"], streltsy: ["射手衛隊", "GUN"],
-  "varangian-guard": ["瓦蘭吉衛隊", "HMI"], "war-elephant": ["戰象", "HMC"], "zhuge-nu": ["諸葛弩兵", "ARCHER"],
+  "varangian-guard": ["瓦蘭吉衛隊", "HMI"], "war-elephant": ["戰象", "ELE"], "zhuge-nu": ["諸葛弩兵", "ARCHER"],
   "fire-lancer": ["火長矛騎兵", "LMC"], "palace-guard": ["皇宮衛兵", "HMI"], "ghazi-raider": ["加齊掠奪者", "LMC"],
   "man-at-arms": ["裝甲步兵", "HMI"], knight: ["騎士", "HMC"], "wynguard-footman": ["溫嘉德步兵", "HMI"],
   "wynguard-ranger": ["溫嘉德遊俠", "ARCHER"], "kipchak-archer": ["欽察", "HA"], "rus-tribute": ["羅斯貢兵", "HMI"],
@@ -47,7 +47,7 @@ const UNITS = {
   "gilded-knight": ["鍍金騎士", "HMC"], "gilded-landsknecht": ["鍍金國土傭僕", "LMI"], "gilded-man-at-arms": ["鍍金裝甲步兵", "HMI"],
   "gilded-spearman": ["鍍金長槍兵", "SPEAR"], akinji: ["阿肯哲", "HA"], janissary: ["蘇丹親兵", "GUN"], "kanabo-samurai": ["金碎棒武士", "HMI"], "naginata-samurai": ["薙刀武士", "HMI"],
   "tanegashima-ashigaru": ["火繩槍足輕", "GUN"], "yari-cavalry": ["日本長槍騎兵", "LMC"], "amir-warrior": ["親王戰士", "HMI"],
-  "raider-elephant": ["突襲戰象", "LMC"], "imperial-guard": ["禁衛軍", "HMC"],
+  "raider-elephant": ["突襲戰象", "ELE"], "tower-elephant": ["塔台戰象", "ELE"], "sultans-elite-tower-elephant": ["蘇丹的塔台戰象", "ELE"], "ballista-elephant": ["弩砲戰象", "ELE"], "imperial-guard": ["禁衛軍", "HMC"],
 };
 
 // Units available in "basic" mode (main-line, non-unique)
